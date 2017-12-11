@@ -25,7 +25,8 @@ extern pxContext context;
 
 //TODO UGH!!
 static pxTextureRef nullMaskRef;
-
+using namespace std;
+extern map<pxObject*, string> pxObjectCountDetails;
 pxImageA::pxImageA(pxScene2d *scene) : pxObject(scene), 
                                        mImageWidth(0), mImageHeight(0),
                                        mStretchX(pxConstantsStretch::NONE), mStretchY(pxConstantsStretch::NONE),
@@ -36,6 +37,7 @@ pxImageA::pxImageA(pxScene2d *scene) : pxObject(scene),
   mFrameTime = -1;
   mPlays = 0;
   mResource = pxImageManager::getImageA("");
+   pxObjectCountDetails[this] = "pxImageA";
 }
 
 pxImageA::~pxImageA()

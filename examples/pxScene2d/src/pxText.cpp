@@ -26,7 +26,9 @@
 
 extern pxContext context;
 
-
+#include <map>
+using namespace std;
+extern map<pxObject*, string> pxObjectCountDetails;
 pxText::pxText(pxScene2d* scene):pxObject(scene), mFontLoaded(false), mFontDownloadRequest(NULL), mListenerAdded(false)
 {
   float c[4] = {1, 1, 1, 1};
@@ -35,6 +37,7 @@ pxText::pxText(pxScene2d* scene):pxObject(scene), mFontLoaded(false), mFontDownl
   mFont = pxFontManager::getFont(defaultFont);
   mPixelSize = defaultPixelSize;
   mDirty = true;
+	pxObjectCountDetails[this] = "pxText";
 }
 
 pxText::~pxText()
@@ -56,6 +59,15 @@ void pxText::onInit()
   if( getFontResource() != NULL && getFontResource()->isFontLoaded()) {
     resourceReady("resolve");
   }
+for (std:: map<pxObject* , string>:: iterator iter = pxObjectCountDetails.begin(); iter != pxObjectCountDetails.end(); iter++)
+    {
+            if(iter->first == this)
+            {
+                        iter->second = iter->second + (getFontResource()->getUrl().cString());
+                        break;
+            }
+    }
+
 }
 rtError pxText::text(rtString& s) const { s = mText; return RT_OK; }
 

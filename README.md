@@ -1,4 +1,6 @@
 #pxCore
+
+
 Updated July 19th 2009
 
 pxCore is a small opensource library that provides a portable framebuffer and windowing abstraction for C++. This library is intended to hide the complexity of writing rasterization code on multiple platforms and allows you to easily write the following sorts of things in a portable way.

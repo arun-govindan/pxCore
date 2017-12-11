@@ -38,12 +38,16 @@ extern pxContext context;
 #include "pxTimer.h"
 #endif
 
+using namespace std;
+extern map<pxObject*, string> pxObjectCountDetails;
+
 rtDefineMethod(pxCanvas, drawPath);
 
 pxCanvas::pxCanvas(pxScene2d* scene): pxObject(scene)
 {
   mw = 1280;// scene->w();
   mh =  720;// scene->h();
+  pxObjectCountDetails[this] = "pxCanvas";
 }
 
 pxCanvas::~pxCanvas()

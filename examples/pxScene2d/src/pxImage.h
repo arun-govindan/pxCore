@@ -26,6 +26,9 @@
 #include "pxTexture.h"
 //#include "pxTextureCacheObject.h"
 #include "pxResource.h"
+#include <map>
+using namespace std;
+extern map<pxObject*, string> pxObjectCountDetails;
 
 class pxImage: public pxObject, pxResourceListener 
 {
@@ -43,6 +46,7 @@ public:
     mw = -1;
     mh = -1;
     mResource = pxImageManager::getImage("");
+ pxObjectCountDetails[this] = "pxImage";
   }
 
   virtual ~pxImage();

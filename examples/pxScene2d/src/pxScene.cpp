@@ -100,6 +100,8 @@ char** g_origArgv = NULL;
 bool gDumpMemUsage = false;
 extern int pxObjectCount;
 #ifdef HAS_LINUX_BREAKPAD
+extern map<pxObject* , string> pxObjectCountDetails;
+
 static bool dumpCallback(const google_breakpad::MinidumpDescriptor& descriptor,
 void* context, bool succeeded) {
   UNUSED_PARAM(descriptor);
@@ -256,7 +258,13 @@ protected:
     script.garbageCollect();
     if (gDumpMemUsage)
     {
-      rtLogInfo("pxobjectcount is [%d]",pxObjectCount);
+	    uint32_t siz = pxObjectCountDetails.size();
+	    rtLogInfo("!*!*!*!*!*!*!size of the map is %d\n", siz);
+	    for (std:: map<pxObject* , string>:: iterator iter = pxObjectCountDetails.begin(); iter != pxObjectCountDetails.end(); iter++)
+	    {
+		    rtLogInfo("!*!*!*!*!*!*!*!*!*!!**!*pxObject is not deleted : %s\n", (iter->second).c_str());
+	    }
+	    rtLogInfo("pxobjectcount is [%d]",pxObjectCount);
 #ifndef PX_PLATFORM_DFB_NON_X11
       rtLogInfo("texture memory usage is [%" PRId64 "]",context.currentTextureMemoryUsageInBytes());
 #endif

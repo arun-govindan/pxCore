@@ -24,7 +24,9 @@
 #include "pxOffscreen.h"
 //#include "pxTextureCacheObject.h"
 #include "pxResource.h"
-
+#include <map>
+using namespace std;
+extern map<pxObject*, string> pxObjectCountDetails;
 class pxImage9: public pxObject, pxResourceListener {
 public:
   rtDeclareObject(pxImage9, pxObject);
@@ -41,6 +43,7 @@ public:
     mResource = pxImageManager::getImage("");
     mw = -1;
     mh = -1;
+    pxObjectCountDetails[this] = "pxImage9";
   }
   
   rtError url(rtString& s) const;

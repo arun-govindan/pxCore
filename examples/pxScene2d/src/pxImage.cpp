@@ -63,6 +63,14 @@ void pxImage::onInit()
   if (getImageResource() != NULL)
   {
     setUrl(getImageResource()->getUrl());
+    for (std:: map<pxObject* , string>:: iterator iter = pxObjectCountDetails.begin(); iter != pxObjectCountDetails.end(); iter++)
+    {
+            if(iter->first == this)
+            {
+                        iter->second = iter->second + (getImageResource()->getUrl().cString());
+			break;
+            }
+    }
   }
   else
   {

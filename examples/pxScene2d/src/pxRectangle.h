@@ -22,7 +22,9 @@
 #define PX_RECTANGLE_H
 
 #include "pxScene2d.h"
-
+#include <map>
+using namespace std;
+extern map<pxObject*, string> pxObjectCountDetails;
 class pxRectangle: public pxObject 
 {
 public:
@@ -37,6 +39,7 @@ public:
     float l[4] = {1,1,1,1};
     setFillColor(f);
     setLineColor(l);
+pxObjectCountDetails[this] = "Rect";
     //mReady.send("resolve",this);
   }
 

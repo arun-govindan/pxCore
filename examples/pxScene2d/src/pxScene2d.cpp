@@ -142,6 +142,8 @@ map<string, string> gWaylandAppsMap;
 map<string, string> gWaylandRegistryAppsMap;
 map<string, string> gPxsceneWaylandAppsMap;
 static bool gWaylandAppsConfigLoaded = false;
+
+map<pxObject*, string> pxObjectCountDetails;
 #define DEFAULT_WAYLAND_APP_CONFIG_FILE "./waylandregistry.conf"
 #define DEFAULT_ALL_APPS_CONFIG_FILE "./pxsceneappregistry.conf"
 
@@ -474,7 +476,16 @@ pxObject::~pxObject()
     }
     mChildren.clear();
     pxObjectCount--;
-    rtValue nullValue;
+    for (std:: map<pxObject* , string>:: iterator iter = pxObjectCountDetails.begin(); iter != pxObjectCountDetails.end(); iter++)
+    {
+	    if(iter->first == this)
+	    {
+		    pxObjectCountDetails.erase(iter);
+			break;
+	    }
+    } 
+
+	rtValue nullValue;
     mReady.send("reject",nullValue);
     clearSnapshot(mSnapshotRef);
     clearSnapshot(mClipSnapshotRef);
@@ -3090,7 +3101,15 @@ rtError pxSceneContainer::setUrl(rtString url)
   rtLogInfo("pxSceneContainer::setUrl(%s)",url.cString());
   // If old promise is still unfulfilled resolve it
   // and create a new promise for the context of this Url
-  mReady.send("resolve", this);
+  for (std:: map<pxObject* , string>:: iterator iter = pxObjectCountDetails.begin(); iter != pxObjectCountDetails.end(); iter++)
+    {
+            if(iter->first == this)
+            {
+                        iter->second = iter->second +"_"+ url.cString();
+			break;
+            }
+    } 
+ mReady.send("resolve", this);
   mReady = new rtPromise( std::string("pxSceneContainer >> ") + std::string(url) );
 
   mUrl = url;
