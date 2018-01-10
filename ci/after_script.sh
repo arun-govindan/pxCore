@@ -22,7 +22,7 @@ then
 fi
 
 cd $TRAVIS_BUILD_DIR
-if [ "$TRAVIS_EVENT_TYPE" = "push" ] ;
+if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ];
 then
   tar -cvzf logs.tgz logs/*
   checkError $? "Unable to compress logs folder" "Check for any previous tasks failed" "Retry"
