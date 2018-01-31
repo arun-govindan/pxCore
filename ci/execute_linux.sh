@@ -46,6 +46,8 @@ printExecLogs()
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 # Start testRunner ... 
+
+
 cd $TRAVIS_BUILD_DIR/examples/pxScene2d/src
 ./pxscene.sh $TESTRUNNERURL?tests=file://$TRAVIS_BUILD_DIR/tests/pxScene2d/testRunner/tests.json > $EXECLOGS 2>&1 &
 
@@ -57,7 +59,7 @@ count=0
 max_seconds=1500
 
 while [ "$retVal" -ne 0 ] &&  [ "$count" -ne "$max_seconds" ]; do
-	printf "\n [execute_osx.sh] snoozing for 30 seconds (%d of %d) \n" $count $max_seconds
+	printf "\n [execute_linux.sh] snoozing for 30 seconds (%d of %d) \n" $count $max_seconds
 	sleep 30; # seconds
 
 	grep "TEST RESULTS: " $EXECLOGS

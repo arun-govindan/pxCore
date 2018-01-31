@@ -6,9 +6,9 @@ checkError()
   then
     printf "\n\n*********************************************************************";
     printf "\n*******************CODE COVERAGE FAIL DETAILS************************";
-    printf "\nCI failure reason: "$2""
-    printf "\nCause:  "$3""
-    printf "\nReproduction/How to fix: "$4""	
+    printf "\nCI failure reason: $2"
+    printf "\nCause:  $3"
+    printf "\nReproduction/How to fix: $4"	
     printf "\n*********************************************************************";
     printf "\n*********************************************************************\n\n";
     exit 1
@@ -16,6 +16,14 @@ checkError()
 }
 
 ulimit -c unlimited
+
+if [ "$DUKTAPE_SUPPORT" = "ON" ] ; then
+  printf "\n************************ ENABLING DUKTAPE ************************\n"
+  touch ~/.sparkUseDuktape
+else
+  rm -f ~/.sparkUseDuktape
+fi
+
 cd $TRAVIS_BUILD_DIR/tests/pxScene2d;
 touch $TRAVIS_BUILD_DIR/logs/test_logs;
 TESTLOGS=$TRAVIS_BUILD_DIR/logs/test_logs;
@@ -38,19 +46,19 @@ sleep 5s;
 pkill -9 -f pxscene2dtests.sh
 
 #check for process hung
-grep "Global test environment tear-down" $TESTLOGS
 errCause=""
+grep "Global test environment tear-down" $TESTLOGS
 retVal=$?
 if [ "$retVal" -ne 0 ]
 	then
 	if [ "$TRAVIS_PULL_REQUEST" != "false" ]
 		then
-		errCause="Either one or more tests failed. Check the above logs"
+		errCause="Execution is not completed. Check the above logs"
                 echo "********************** PRINTING TEST LOG **************************"
                 cat $TESTLOGS
                 echo "************************** LOG ENDS *******************************"
         else
-		errCause="Either one or more tests failed. Check the log file $TESTLOGS"
+		errCause="Execution is not completed. Check the log file $TESTLOGS"
 	fi 
 	checkError $retVal "unittests execution failed" "$errCause" "Run unittests locally"
 fi
@@ -78,7 +86,7 @@ if [ "$retVal" -eq 0 ]
         else
 		errCause="Either one or more tests failed. Check the log file $TESTLOGS"
 	fi 
-	checkError -1 "unittests execution failed" "$errCause" "Run unittests locally"
+	checkError "-1" "unittests execution failed" "$errCause" "Run unittests locally"
 else
 	exit 0;
 fi

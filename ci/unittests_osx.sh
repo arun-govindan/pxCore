@@ -17,6 +17,14 @@ checkError()
 ulimit -c unlimited
 
 cd $TRAVIS_BUILD_DIR
+
+if [ "$DUKTAPE_SUPPORT" = "ON" ] ; then
+  printf "\n************************ ENABLING DUKTAPE ************************\n"
+  touch ~/.sparkUseDuktape
+else
+  rm -f ~/.sparkUseDuktape
+fi
+
 dumped_core=0
 export HANDLE_SIGNALS=1
 export RT_LOG_LEVEL=info
@@ -77,12 +85,12 @@ if [ "$retVal" -eq 1 ]
 then
 	if [ "$TRAVIS_PULL_REQUEST" != "false" ]
 	then
-		errCause="Either one or more tests failed. Check the above logs"
+		errCause="Execution is not completed. Check the above logs"
 		echo "********************** PRINTING TEST LOG **************************"
                 cat $TESTLOGS
                 echo "************************** LOG ENDS *******************************"
         else
-		errCause="Either one or more tests failed. Check the log file $TESTLOGS"
+		errCause="Execution is not completed. Check the log file $TESTLOGS"
 	fi 
 	checkError $retVal "unittests execution failed" "$errCause" "Rrun unittests locally"
 fi
