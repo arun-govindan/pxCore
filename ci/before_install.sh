@@ -43,7 +43,10 @@ fi
 if [ "$TRAVIS_OS_NAME" = "osx" ] ;
 then
   brew update;
-  brew upgrade cmake;
+  cmake --version
+  brew info cmake
+  brew switch cmake 0
+  #brew upgrade cmake;
   brew install quilt
   sudo /usr/sbin/DevToolsSecurity --enable
   lldb --version
