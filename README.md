@@ -1,4 +1,6 @@
 # pxCore
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Farun-govindan%2FpxCore.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Farun-govindan%2FpxCore?ref=badge_shield)
+
 pxCore is a small opensource library that provides a portable framebuffer and windowing abstraction for C++. This library is intended to hide the complexity of writing rasterization code on multiple platforms and allows you to easily write the following sorts of things in a portable way.
 
 * 2d and 3d rasterizers
@@ -31,3 +33,7 @@ Instructions for building __pxscene__ are here: [Building pxscene](https://githu
 Instructions for debugging __pxscene__ javascript applications using VSCode are here: [Debugging applications](https://github.com/pxscene/pxCore/blob/master/examples/pxScene2d/VSCODE_DEBUG.md)
 
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Farun-govindan%2FpxCore.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Farun-govindan%2FpxCore?ref=badge_large)
