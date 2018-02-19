@@ -244,16 +244,24 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
 
   if (!doc.IsObject() || !doc.HasMember("roles") || !doc.HasMember("assign"))
   {
-    rtLogWarn("%s : no 'roles'/'assign' in json", __PRETTY_FUNCTION__);
-    return RT_FAIL;
+	#ifndef WIN32
+      rtLogWarn("%s : no 'roles'/'assign' in json", __PRETTY_FUNCTION__);
+    #else
+	  rtLogWarn("%s : no 'roles'/'assign' in json", __PRETTY_FUNCTION__);
+    #endif
+	return RT_FAIL;
   }
 
   const rapidjson::Value& assign = doc["assign"];
   const rapidjson::Value& roles = doc["roles"];
   if (!assign.IsObject() || !roles.IsObject())
   {
-    rtLogWarn("%s : 'roles'/'assign' are not objects", __PRETTY_FUNCTION__);
-    return RT_FAIL;
+	#ifndef WIN32
+      rtLogWarn("%s : 'roles'/'assign' are not objects", __PRETTY_FUNCTION__);
+	#else
+	  rtLogWarn("%s : 'roles'/'assign' are not objects", __PRETTY_FUNCTION__);
+    #endif
+	return RT_FAIL;
   }
 
   for (rapidjson::Value::ConstMemberIterator itr = assign.MemberBegin(); itr != assign.MemberEnd(); ++itr)
@@ -262,8 +270,12 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
     const rapidjson::Value& val = itr->value;
     if (!key.IsString() || !val.IsString())
     {
-      rtLogWarn("%s : 'assign' key/value is not string", __PRETTY_FUNCTION__);
-      continue;
+      #ifndef WIN32
+	    rtLogWarn("%s : 'assign' key/value is not string", __PRETTY_FUNCTION__);
+      #else
+		rtLogWarn("%s : 'assign' key/value is not string", __PRETTY_FUNCTION__);
+	  #endif
+	  continue;
     }
     wildcard_t w;
     w.first = key.GetString();
@@ -277,13 +289,20 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
     const rapidjson::Value& val = itr->value;
     if (!key.IsString() || !val.IsObject())
     {
-      rtLogWarn("%s : 'roles' key/value is not string/object", __PRETTY_FUNCTION__);
+	  #ifndef WIN32	
+        rtLogWarn("%s : 'roles' key/value is not string/object", __PRETTY_FUNCTION__);
+	  #else
+		rtLogWarn("%s : 'roles' key/value is not string/object", __PRETTY_FUNCTION__);
+	  #endif
       continue;
     }
     mRolesMap[key.GetString()] = permissionsJsonToMap(val);
   }
-
-  rtLogInfo("%s : %ld roles, %ld assigned urls", __PRETTY_FUNCTION__, mRolesMap.size(), mAssignMap.size());
+  #ifndef WIN32
+    rtLogInfo("%s : %ld roles, %ld assigned urls", __PRETTY_FUNCTION__, mRolesMap.size(), mAssignMap.size());
+  #else
+	rtLogInfo("%s : %ld roles, %ld assigned urls", __PRETTY_FUNCTION__, mRolesMap.size(), mAssignMap.size());
+  #endif
   return RT_OK;
 }
 
@@ -310,12 +329,19 @@ rtError rtPermissions::setOrigin(const char* origin)
       if (jt != mRolesMap.end())
       {
         mPermissionsMap = jt->second;
-        rtLogDebug("%s : mapping for '%s': '%s'", __PRETTY_FUNCTION__, origin, it->second.c_str());
+		#ifndef WIN32
+          rtLogDebug("%s : mapping for '%s': '%s'", __PRETTY_FUNCTION__, origin, it->second.c_str());
+		#else
+		   rtLogDebug("%s : mapping for '%s': '%s'", __PRETTY_FUNCTION__, origin, it->second.c_str());
+	    #endif
         return RT_OK;
       }
     }
-
-    rtLogDebug("%s : no mapping for '%s'", __PRETTY_FUNCTION__, origin);
+    #ifndef WIN32
+      rtLogDebug("%s : no mapping for '%s'", __PRETTY_FUNCTION__, origin);
+    #else
+	  rtLogDebug("%s : no mapping for '%s'", __PRETTY_FUNCTION__, origin);
+    #endif  
   }
 
   return RT_FAIL;
