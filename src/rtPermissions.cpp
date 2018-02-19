@@ -92,8 +92,12 @@ rtPermissions::permissionsMap_t permissionsJsonToMap(const rapidjson::Value& jso
       const rapidjson::Value& sec = json[sectionName];
       if (!sec.IsObject())
       {
-        rtLogWarn("%s : '%s' is not object", __PRETTY_FUNCTION__, sectionName);
-        continue;
+		#ifndef WIN32
+          rtLogWarn("%s : '%s' is not object", __PRETTY_FUNCTION__, sectionName);
+        else
+		  rtLogWarn("%s : '%s' is not object", __FUNCTION__, sectionName);
+	    #endif
+		continue;
       }
       for (int j = 0; j < 2; j++)
       {
@@ -104,7 +108,12 @@ rtPermissions::permissionsMap_t permissionsJsonToMap(const rapidjson::Value& jso
           const rapidjson::Value& arr = sec[allowBlockName];
           if (!arr.IsArray())
           {
-            rtLogWarn("%s : '%s' is not array", __PRETTY_FUNCTION__, allowBlockName);
+            
+			#ifndef WIN32
+			  rtLogWarn("%s : '%s' is not array", __PRETTY_FUNCTION__, allowBlockName);
+			#else
+			  rtLogWarn("%s : '%s' is not array", __FUNCTION__, allowBlockName);
+		    #endif
             continue;
           }
           for (rapidjson::SizeType k = 0; k < arr.Size(); k++)
@@ -112,8 +121,12 @@ rtPermissions::permissionsMap_t permissionsJsonToMap(const rapidjson::Value& jso
             const rapidjson::Value& str = arr[k];
             if (!str.IsString())
             {
-              rtLogWarn("%s : '%s' item is not string", __PRETTY_FUNCTION__, allowBlockName);
-              continue;
+		      #ifndef WIN32
+                rtLogWarn("%s : '%s' item is not string", __PRETTY_FUNCTION__, allowBlockName);
+              #else
+			    rtLogWarn("%s : '%s' item is not string", __PRETTY_FUNCTION__, allowBlockName);
+			  #endif
+			  continue;
             }
             // third level... array of urls
             rtPermissions::wildcard_t w;
@@ -194,13 +207,20 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
 
   rtString currentDir;
   rtGetCurrentDirectory(currentDir);
-  rtLogDebug("%s : currentDir='%s'", __PRETTY_FUNCTION__, currentDir.cString());
-
+  #ifndef WIN32
+    rtLogDebug("%s : currentDir='%s'", __PRETTY_FUNCTION__, currentDir.cString());
+  #else
+	rtLogDebug("%s : currentDir='%s'", __PRETTY_FUNCTION__, currentDir.cString());
+  #endif
   FILE* fp = fopen(s, "rb");
   if (NULL == fp)
   {
-    rtLogDebug("%s : cannot open '%s'", __PRETTY_FUNCTION__, s);
-    return RT_FAIL;
+	#ifndef WIN32
+      rtLogDebug("%s : cannot open '%s'", __PRETTY_FUNCTION__, s);
+    #else
+	  rtLogDebug("%s : cannot open '%s'", __PRETTY_FUNCTION__, s);
+	#endif
+	return RT_FAIL;
   }
 
   rapidjson::Document doc;
@@ -214,8 +234,12 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
   if (!result)
   {
     rapidjson::ParseErrorCode e = doc.GetParseError();
-    rtLogWarn("%s : [JSON parse error : %s (%ld)]", __PRETTY_FUNCTION__, rapidjson::GetParseError_En(e), result.Offset());
-    return RT_FAIL;
+	#ifndef WIN32
+      rtLogWarn("%s : [JSON parse error : %s (%ld)]", __PRETTY_FUNCTION__, rapidjson::GetParseError_En(e), result.Offset());
+    #else
+      rtLogWarn("%s : [JSON parse error : %s (%ld)]", __PRETTY_FUNCTION__, rapidjson::GetParseError_En(e), result.Offset());
+	#endif
+	return RT_FAIL;
   }
 
   if (!doc.IsObject() || !doc.HasMember("roles") || !doc.HasMember("assign"))
