@@ -36,7 +36,7 @@ init:
   - SET
   - git config --system core.longpaths true
   - ps: "ls \"C:/\""
-  - if ["%APPVEYOR_PULL_REQUEST_TITLE%"]==[""] secure-file\tools\secure-file -decrypt "%S%/pxscene-build.pem.ppk.enc" -secret %passphrase%
+  - secure-file\tools\secure-file -decrypt "%S%/pxscene-build.pem.ppk.enc" -secret %passphrase%
 hosts:
   build_server: 96.116.56.119
 
@@ -45,7 +45,7 @@ before_build:
   - choco install putty.install
   - nuget install secure-file -ExcludeVersion
   - ps: ls
-  - secure-file\tools\secure-file -decrypt "%S%/pxscene-build.pem.ppk.enc" -secret %passphrase%
+  -  if ["%APPVEYOR_PULL_REQUEST_TITLE%"]==[""] secure-file\tools\secure-file -decrypt "%S%/pxscene-build.pem.ppk.enc" -secret %passphrase%
 build_script:
   - echo build_script...
   - cd %S%
