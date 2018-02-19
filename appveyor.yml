@@ -29,7 +29,7 @@ environment:
 
 clone_folder: "c:/dw/pxCore"
 
-# Build pipeline: https://www.appveyor.com/docs/build-configuration/
+# Build  pipeline: https://www.appveyor.com/docs/build-configuration/
 init:
   - echo environment setup...
   - SET
