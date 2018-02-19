@@ -28,6 +28,8 @@ if %cronUpload% == True (
       echo "-------------------------- Failed to upload build logs"
     )
 )
+if %APPVEYOR_PULL_REQUEST_TITLE% != "" (
 del %S%\pxscene-build.pem.ppk
+)
 
 EXIT 0
