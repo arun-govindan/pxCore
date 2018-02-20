@@ -70,10 +70,10 @@ cd _CPack_Packages/win32/NSIS
 echo %s%\\"build-win32\\_CPack_Packages\\win32\\NSIS\\
 dir "%s%\\"build-win32\\_CPack_Packages\\win32\\NSIS\\"
 
-appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.exe" -DeploymentName "installer" -Type "Auto" -Verbosity "Normal"
+appveyor PushArtifact "pxscene-setup.exe" -DeploymentName "installer" -Type "Auto" -Verbosity "Normal"
 
 @rem Standalone (requires no installation)
-appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.zip" -DeploymentName "portable" -Type "Zip" -Verbosity "Normal"
+appveyor PushArtifact "pxscene-setup.zip" -DeploymentName "portable" -Type "Zip" -Verbosity "Normal"
     
 
 cd %ORIG_DIR%
