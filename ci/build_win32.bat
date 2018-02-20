@@ -66,6 +66,10 @@ cd _CPack_Packages/win32/NSIS
 @rem deploy artifacts
 @rem based on: https://www.appveyor.com/docs/build-worker-api/#push-artifact
 @rem NSIS based installer
+
+echo %s%\\"build-win32\\_CPack_Packages\\win32\\NSIS\\
+dir "%s%\\"build-win32\\_CPack_Packages\\win32\\NSIS\\"
+
 appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.exe" -DeploymentName "installer" -Type "Auto" -Verbosity "Normal"
 
 @rem Standalone (requires no installation)
