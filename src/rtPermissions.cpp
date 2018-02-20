@@ -124,7 +124,7 @@ rtPermissions::permissionsMap_t permissionsJsonToMap(const rapidjson::Value& jso
 		      #ifndef WIN32
                 rtLogWarn("%s : '%s' item is not string", __PRETTY_FUNCTION__, allowBlockName);
               #else
-			    rtLogWarn("%s : '%s' item is not string", __PRETTY_FUNCTION__, allowBlockName);
+			    rtLogWarn("%s : '%s' item is not string", __FUNCTION__, allowBlockName);
 			  #endif
 			  continue;
             }
@@ -210,7 +210,7 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
   #ifndef WIN32
     rtLogDebug("%s : currentDir='%s'", __PRETTY_FUNCTION__, currentDir.cString());
   #else
-	rtLogDebug("%s : currentDir='%s'", __PRETTY_FUNCTION__, currentDir.cString());
+	rtLogDebug("%s : currentDir='%s'", __FUNCTION__, currentDir.cString());
   #endif
   FILE* fp = fopen(s, "rb");
   if (NULL == fp)
@@ -218,7 +218,7 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
 	#ifndef WIN32
       rtLogDebug("%s : cannot open '%s'", __PRETTY_FUNCTION__, s);
     #else
-	  rtLogDebug("%s : cannot open '%s'", __PRETTY_FUNCTION__, s);
+	  rtLogDebug("%s : cannot open '%s'", __FUNCTION__, s);
 	#endif
 	return RT_FAIL;
   }
@@ -237,7 +237,7 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
 	#ifndef WIN32
       rtLogWarn("%s : [JSON parse error : %s (%ld)]", __PRETTY_FUNCTION__, rapidjson::GetParseError_En(e), result.Offset());
     #else
-      rtLogWarn("%s : [JSON parse error : %s (%ld)]", __PRETTY_FUNCTION__, rapidjson::GetParseError_En(e), result.Offset());
+      rtLogWarn("%s : [JSON parse error : %s (%ld)]", __FUNCTION__, rapidjson::GetParseError_En(e), result.Offset());
 	#endif
 	return RT_FAIL;
   }
@@ -247,7 +247,7 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
 	#ifndef WIN32
       rtLogWarn("%s : no 'roles'/'assign' in json", __PRETTY_FUNCTION__);
     #else
-	  rtLogWarn("%s : no 'roles'/'assign' in json", __PRETTY_FUNCTION__);
+	  rtLogWarn("%s : no 'roles'/'assign' in json", __FUNCTION__);
     #endif
 	return RT_FAIL;
   }
@@ -259,7 +259,7 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
 	#ifndef WIN32
       rtLogWarn("%s : 'roles'/'assign' are not objects", __PRETTY_FUNCTION__);
 	#else
-	  rtLogWarn("%s : 'roles'/'assign' are not objects", __PRETTY_FUNCTION__);
+	  rtLogWarn("%s : 'roles'/'assign' are not objects", __FUNCTION__);
     #endif
 	return RT_FAIL;
   }
@@ -273,7 +273,7 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
       #ifndef WIN32
 	    rtLogWarn("%s : 'assign' key/value is not string", __PRETTY_FUNCTION__);
       #else
-		rtLogWarn("%s : 'assign' key/value is not string", __PRETTY_FUNCTION__);
+		rtLogWarn("%s : 'assign' key/value is not string", __FUNCTION__);
 	  #endif
 	  continue;
     }
@@ -292,7 +292,7 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
 	  #ifndef WIN32	
         rtLogWarn("%s : 'roles' key/value is not string/object", __PRETTY_FUNCTION__);
 	  #else
-		rtLogWarn("%s : 'roles' key/value is not string/object", __PRETTY_FUNCTION__);
+		rtLogWarn("%s : 'roles' key/value is not string/object", __FUNCTION__);
 	  #endif
       continue;
     }
@@ -301,7 +301,7 @@ rtError rtPermissions::loadBootstrapConfig(const char* filename)
   #ifndef WIN32
     rtLogInfo("%s : %ld roles, %ld assigned urls", __PRETTY_FUNCTION__, mRolesMap.size(), mAssignMap.size());
   #else
-	rtLogInfo("%s : %ld roles, %ld assigned urls", __PRETTY_FUNCTION__, mRolesMap.size(), mAssignMap.size());
+	rtLogInfo("%s : %ld roles, %ld assigned urls", __FUNCTION__, mRolesMap.size(), mAssignMap.size());
   #endif
   return RT_OK;
 }
@@ -332,7 +332,7 @@ rtError rtPermissions::setOrigin(const char* origin)
 		#ifndef WIN32
           rtLogDebug("%s : mapping for '%s': '%s'", __PRETTY_FUNCTION__, origin, it->second.c_str());
 		#else
-		   rtLogDebug("%s : mapping for '%s': '%s'", __PRETTY_FUNCTION__, origin, it->second.c_str());
+		   rtLogDebug("%s : mapping for '%s': '%s'", __FUNCTION__, origin, it->second.c_str());
 	    #endif
         return RT_OK;
       }
@@ -340,7 +340,7 @@ rtError rtPermissions::setOrigin(const char* origin)
     #ifndef WIN32
       rtLogDebug("%s : no mapping for '%s'", __PRETTY_FUNCTION__, origin);
     #else
-	  rtLogDebug("%s : no mapping for '%s'", __PRETTY_FUNCTION__, origin);
+	  rtLogDebug("%s : no mapping for '%s'", __FUNCTION__, origin);
     #endif  
   }
 
