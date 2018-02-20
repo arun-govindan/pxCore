@@ -44,6 +44,8 @@ hosts:
 
 before_build:
   - cd %S%
+  - call ci/appveyor-custodian.bat
+  - cd %S%
   - choco install putty.install
   - nuget install secure-file -ExcludeVersion
   - ps: ls

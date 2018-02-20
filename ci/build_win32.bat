@@ -63,4 +63,13 @@ if %ERRORLEVEL% NEQ 0 (
 cd _CPack_Packages/win32/NSIS
 7z a -y pxscene-setup.zip pxscene-setup
 
+@rem deploy artifacts
+@rem based on: https://www.appveyor.com/docs/build-worker-api/#push-artifact
+@rem NSIS based installer
+appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.exe" -DeploymentName "installer" -Type "Auto" -Verbosity "Normal"
+
+@rem Standalone (requires no installation)
+appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.zip" -DeploymentName "portable" -Type "Zip" -Verbosity "Normal"
+    
+
 cd %ORIG_DIR%
