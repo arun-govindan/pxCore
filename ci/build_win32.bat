@@ -41,7 +41,8 @@ set
 @rem build pxScene
 if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
 echo "building edge ..."
-cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
+set PX_VERSION="edge"
+cmake -DCMAKE_VERBOSE_MAKEFILE=ON ..
 )
 
 if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
