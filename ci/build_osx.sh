@@ -74,13 +74,13 @@ if [ "$TRAVIS_PULL_REQUEST" = "false" ]
   then
   echo "*********************** Building pxscene deploy app ***********************" >> $BUILDLOGS
 
-  if [ "$TRAVIS_EVENT_TYPE" = "cron" ] && [ "$TRAVIS_REPO_SLUG" = "pxscene/pxCore" ] && [ "$TRAVIS_BRANCH" = "master" ] ;
+  if [ "$TRAVIS_EVENT_TYPE" = "cron" ]  ;
   then
     cd $TRAVIS_BUILD_DIR/examples/pxScene2d/src/
     ./mkdeploy.sh "pxscene:edge" >>$BUILDLOGS 2>&1
   fi
         
-  if [ "$TRAVIS_EVENT_TYPE" = "api" ] && [ "$TRAVIS_REPO_SLUG" = "pxscene/pxCore" ] && [ "$TRAVIS_BRANCH" = "master" ];
+  if [ "$TRAVIS_EVENT_TYPE" = "api" ] ;
   then
     cd $TRAVIS_BUILD_DIR/examples/pxScene2d/src/
 
