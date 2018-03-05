@@ -39,7 +39,7 @@ cd build-win32
 
 @rem build pxScene
 if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
-cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="pxscene:edge" ..
+cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
 )
 
 if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
