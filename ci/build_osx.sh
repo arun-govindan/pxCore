@@ -76,6 +76,7 @@ if [ "$TRAVIS_PULL_REQUEST" = "false" ]
 
   if [ "$TRAVIS_EVENT_TYPE" = "cron" ] ;
   then
+    cd $TRAVIS_BUILD_DIR/examples/pxScene2d/src/
     ./mkdeploy.sh "pxscene:edge" >>$BUILDLOGS 2>&1
     fi
         
