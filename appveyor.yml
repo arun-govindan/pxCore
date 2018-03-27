@@ -39,12 +39,14 @@ image: Visual Studio 2017
 
 environment:
   S: "c:/dw/pxCore"
+  
 
 clone_folder: "c:/dw/pxCore"
 
 # Build pipeline: https://www.appveyor.com/docs/build-configuration/
 init:
   - echo environment setup...
+  - set 
   - git config --system core.longpaths true
   - ps: "ls \"C:/\""
 
