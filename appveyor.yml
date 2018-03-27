@@ -20,6 +20,19 @@ version: 0dev.{build}
 
 clone_depth: 50
 
+deploy:
+  release: myproduct
+  description: 'Release description'
+  provider: pxscene.org
+  auth_token:
+    secure: v88s6kn0cqdw9n8lk3mg   # your encrypted token from GitHub
+  artifact: pxscene-setup.exe      # upload all NuGet packages to release assets
+  draft: false
+  prerelease: false
+  on:
+    branch: master                 # release from master branch only
+    appveyor_repo_tag: true        # deploy on tag push only
+
 platform: x86
 
 image: Visual Studio 2017
