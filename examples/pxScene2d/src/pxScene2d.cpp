@@ -85,7 +85,7 @@ using namespace std;
 // #define DEBUG_SKIP_DRAW       // Skip DRAW   code - for testing.
 // #define DEBUG_SKIP_UPDATE     // Skip UPDATE code - for testing.
 
-extern rtThreadQueue gUIThreadQueue;
+extern rtThreadQueue* gUIThreadQueue;
 
 static int fpsWarningThreshold = 25;
 
@@ -257,12 +257,12 @@ void populateAllAppsConfig()
   {
     if (appList[i].IsObject())
     {
-      if ((appList[i].HasMember("name")) && (appList[i]["name"].IsString()) && (appList[i].HasMember("uri")) &&
-          (appList[i]["uri"].IsString()) && (appList[i].HasMember("type")) && (appList[i]["type"].IsString()))
+      if ((appList[i].HasMember("cmdName")) && (appList[i]["cmdName"].IsString()) && (appList[i].HasMember("uri")) &&
+          (appList[i]["uri"].IsString()) && (appList[i].HasMember("applicationType")) && (appList[i]["applicationType"].IsString()))
       {
-        string appName = appList[i]["name"].GetString();
+        string appName = appList[i]["cmdName"].GetString();
         string binary = appList[i]["uri"].GetString();
-        string type = appList[i]["type"].GetString();
+        string type = appList[i]["applicationType"].GetString();
         if ((appName.length() != 0) && (binary.length() != 0) && (type == "native"))
         {
           gPxsceneWaylandAppsMap[appName] = binary;
@@ -434,6 +434,8 @@ unsigned char *base64_decode(const unsigned char *data,
     if (data[input_length - 2] == '=')
         (*output_length)--;
 
+    if (NULL == output_length)
+      return NULL;
     unsigned char *decoded_data = (unsigned char*)malloc(*output_length);
     if (decoded_data == NULL)
         return NULL;
@@ -616,8 +618,8 @@ void pxObject::dispose()
     mEmit->clearListeners();
     for(vector<rtRef<pxObject> >::iterator it = mChildren.begin(); it != mChildren.end(); ++it)
     {
-      (*it)->dispose();
       (*it)->mParent = NULL;  // setParent mutates the mChildren collection
+      (*it)->dispose();
     }
     mChildren.clear();
     clearSnapshot(mSnapshotRef);
@@ -901,7 +903,8 @@ rtError pxObject::animateTo(const char* prop, double to, double duration,
 {
   if (mIsDisposed)
   {
-    promise.send("reject",this);
+    rtValue nullValue;
+    promise.send("reject",nullValue);
     return RT_OK;
   }
   animateToInternal(prop, to, duration, ((pxConstantsAnimation*)CONSTANTS.animationConstants.getPtr())->getInterpFunc(interp),
@@ -1928,6 +1931,7 @@ rtError pxScene2d::dispose()
     mFocusObj = NULL;
 
     pxFontManager::clearAllFonts();
+
     return RT_OK;
 }
 
@@ -2175,6 +2179,32 @@ rtError pxScene2d::logDebugMetrics()
   return RT_OK;
 }
 
+rtError pxScene2d::collectGarbage()
+{
+  rtLogDebug("calling collectGarbage");
+  static bool collectGarbageEnabled = false;
+  static bool checkEnv = true;
+  if (checkEnv)
+  {
+    char const* s = getenv("SPARK_ENABLE_COLLECT_GARBAGE");
+    if (s && (strcmp(s,"1") == 0))
+    {
+      collectGarbageEnabled = true;
+    }
+    checkEnv = false;
+  }
+  if (collectGarbageEnabled)
+  {
+    rtLogWarn("performing a garbage collection");
+    script.collectGarbage();
+  }
+  else
+  {
+    rtLogWarn("forced garbage collection is disabled");
+  }
+  return RT_OK;
+}
+
 rtError pxScene2d::clock(uint64_t & time)
 {
   time = (uint64_t)pxMilliseconds();
@@ -2352,7 +2382,10 @@ void pxScene2d::onUpdate(double t)
   //pxFont::checkForCompletedDownloads();
 
   // Dispatch various tasks on the main UI thread
-  gUIThreadQueue.process(0.01);
+  if (gUIThreadQueue)
+  {
+    gUIThreadQueue->process(0.01);
+  }
 
   if (start == 0)
   {
@@ -3261,6 +3294,7 @@ rtDefineProperty(pxScene2d, customAnimator);
 rtDefineMethod(pxScene2d, create);
 rtDefineMethod(pxScene2d, clock);
 rtDefineMethod(pxScene2d, logDebugMetrics);
+rtDefineMethod(pxScene2d, collectGarbage);
 //rtDefineMethod(pxScene2d, createWayland);
 rtDefineMethod(pxScene2d, addListener);
 rtDefineMethod(pxScene2d, delListener);
