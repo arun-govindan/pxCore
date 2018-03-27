@@ -43,7 +43,20 @@ cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
 )
 
 if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
-cmake -DCMAKE_VERBOSE_MAKEFILE=ON ..
+    if "APPVEYOR_REPO_TAG"=="false" (
+        cmake -DCMAKE_VERBOSE_MAKEFILE=ON ..
+    )
+	if "APPVEYOR_REPO_TAG"=="true" (
+	    @rem tag build, add build version :  Use ProductVersion and FILEVERSION from pxscene2d/src/win/pxscene.rc 
+		setlocal enabledelayedexpansion
+		for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') do set "verInfo=%%b"
+		for  /f "tokens=2,* delims=\ " %%a in ("%verInfo%") do set "prodVer=%%a"
+		set dotReplace=.
+		set prodVer=%prodVer:,=!dotReplace!%
+		echo %prodVer%
+		setlocal
+        cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%prodVer% ..
+    )
 )
 
 cmake --build . --config Release -- /m
