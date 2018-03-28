@@ -48,6 +48,7 @@ if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
 	if "%APPVEYOR_REPO_TAG%"=="false" (
 	    @rem tag build, add build version :  Use ProductVersion and FILEVERSION from pxscene2d/src/win/pxscene.rc 
 		setlocal enabledelayedexpansion
+		@echo on
 		for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') do set "verInfo=%%b"
 		echo "verInfo is"
 		echo "%verInfo%"
