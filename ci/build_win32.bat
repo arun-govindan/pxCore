@@ -49,17 +49,17 @@ if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
 	    @rem tag build, add build version :  Use ProductVersion and FILEVERSION from pxscene2d/src/win/pxscene.rc 
 		setlocal enabledelayedexpansion
 		@echo on
-		set verInfo = "a"
-		echo "%verInfo%"
-		for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') do set verInfo=%%b
-		echo "verInfo is"
-		echo "%verInfo%"
+		set verInfo=a
+		echo %verInfo%
+		for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') do set "verInfo=%%b"
+		echo verInfo is
+		echo %verInfo%
 		for /f "tokens=2,* delims=\ " %%a in ("%verInfo%") do set "prodVer=%%a"
-		echo "%prodVer%"
+		echo %prodVer%
 		set dotReplace=.
 		set prodVer=%prodVer:,=!dotReplace!%
-		echo "%prodVer%"
-		echo "completed"
+		echo %prodVer%
+		echo completed
 		setlocal
 		echo "cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%prodVer% .."
         cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%prodVer% ..
