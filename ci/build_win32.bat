@@ -24,7 +24,7 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Auxiliary
 
 @rem build dependencies
 cd examples/pxScene2d/external
-@rem call buildWindows.bat
+call buildWindows.bat
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 @rem Avoid using link.exe from that paths
@@ -50,7 +50,7 @@ if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
     cmake -DCMAKE_VERBOSE_MAKEFILE=ON ..
     )
 	echo "In appveryor afer false 1"
-	if "%APPVEYOR_REPO_TAG%"=="true" (
+	if "%APPVEYOR_REPO_TAG%"=="false" (
 	    echo "In appveryor tag false 2"
 	    @rem tag build, add build version :  Use ProductVersion and FILEVERSION from pxscene2d/src/win/pxscene.rc 
 		setlocal enabledelayedexpansion
@@ -60,6 +60,7 @@ if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
 		set prodVer=%prodVer:,=!dotReplace!%
 		echo %prodVer%
 		setlocal
+		echo "cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%prodVer% .."
         cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%prodVer% ..
     )
 )
