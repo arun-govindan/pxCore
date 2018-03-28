@@ -22,6 +22,10 @@ set "BASE_DIR=%CD%"
 set "VSCMD_START_DIR=%CD%"
 call "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Auxiliary/Build/vcvars32.bat" x86
 
+
+set verInfo=a
+set dotReplace=.
+set prodVer=b
 @rem build dependencies
 cd examples/pxScene2d/external
 @rem  call buildWindows.bat
@@ -49,14 +53,14 @@ if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
 	    @rem tag build, add build version :  Use ProductVersion and FILEVERSION from pxscene2d/src/win/pxscene.rc 
 		setlocal enabledelayedexpansion
 		@echo on
-		set verInfo=a
+		
 		echo %verInfo%
 		for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') do set "verInfo=%%b"
 		echo verInfo is
 		echo %verInfo%
 		for /f "tokens=2,* delims=\ " %%a in ("%verInfo%") do set "prodVer=%%a"
 		echo %prodVer%
-		set dotReplace=.
+		
 		set prodVer=%prodVer:,=!dotReplace!%
 		echo %prodVer%
 		echo completed
