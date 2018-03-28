@@ -57,6 +57,7 @@ if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
 		echo %verInfo%
 		for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') do set "verInfo=%%b"
 		echo verInfo is
+		set "verInfo=bcd"
 		echo %verInfo%
 		for /f "tokens=2,* delims=\ " %%a in ("%verInfo%") do set "prodVer=%%a"
 		echo %prodVer%
