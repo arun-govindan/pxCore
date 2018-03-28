@@ -44,14 +44,10 @@ cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
 )
 	
 if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
-    echo "In APPVEYOR_SCHEDULED_BUILD check 1"
     if "%APPVEYOR_REPO_TAG%"=="false" (
-	echo "In appveryor tag false 1"
-    cmake -DCMAKE_VERBOSE_MAKEFILE=ON ..
+	 cmake -DCMAKE_VERBOSE_MAKEFILE=ON ..
     )
-	echo "In appveryor afer false 1"
-	if "%APPVEYOR_REPO_TAG%"=="false" (
-	    echo "In appveryor tag false 2"
+	if "%APPVEYOR_REPO_TAG%"=="true" (
 	    @rem tag build, add build version :  Use ProductVersion and FILEVERSION from pxscene2d/src/win/pxscene.rc 
 		setlocal enabledelayedexpansion
 		for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') do set "verInfo=%%b"
@@ -80,12 +76,12 @@ cd %ORIG_DIR%
 @rem deploy artifacts
 @rem based on: https://www.appveyor.com/docs/build-worker-api/#push-artifact
 
-if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
+
         @rem NSIS based installer
         appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.exe" -DeploymentName "installer" -Type "Auto" -Verbosity "Normal"
 
         @rem Standalone (requires no installation)
         appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.zip" -DeploymentName "portable" -Type "Zip" -Verbosity "Normal"
-)
+
 
 
