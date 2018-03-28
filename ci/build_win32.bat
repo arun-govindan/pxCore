@@ -45,12 +45,12 @@ cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
 	
 if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
     echo "In APPVEYOR_SCHEDULED_BUILD check 1"
-    if "APPVEYOR_REPO_TAG"=="false" (
+    if "%APPVEYOR_REPO_TAG%"=="false" (
 	echo "In appveryor tag false 1"
-        cmake -DCMAKE_VERBOSE_MAKEFILE=ON ..
+    cmake -DCMAKE_VERBOSE_MAKEFILE=ON ..
     )
 	echo "In appveryor afer false 1"
-	if "APPVEYOR_REPO_TAG"=="false" (
+	if "%APPVEYOR_REPO_TAG%"=="false" (
 	    echo "In appveryor tag false 2"
 	    @rem tag build, add build version :  Use ProductVersion and FILEVERSION from pxscene2d/src/win/pxscene.rc 
 		setlocal enabledelayedexpansion
