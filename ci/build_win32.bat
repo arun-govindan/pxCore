@@ -38,36 +38,32 @@ set PATH=%PATH:c:\cygwin64\bin;=%
 cd "%BASE_DIR%"
 md build-win32
 cd build-win32
-
+set addVer=false
 @rem build pxScene
+echo.trace0
 if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
    echo "building edge"
 cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
 )
-	
-if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
-	echo.In APPVEYOR_SCHEDULED_BUILD 0
-    if "%APPVEYOR_REPO_TAG%"=="false" (
-		echo. Repo tag false
-		cmake -DCMAKE_VERBOSE_MAKEFILE=ON  ..
+
+for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') DO ( 
+			echo trace 1 %%b
+			call set verInfo=%%b
 	)
-	if "%APPVEYOR_REPO_TAG%"=="true" (
-		echo. Repo tag true
-	    @rem tag build, add build version :  Use ProductVersion and FILEVERSION from pxscene2d/src/win/pxscene.rc 
-		@rem ----
-		echo "In appveryor tag false 2"
-	    for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') DO ( 
-		echo trace 1 %%b
-		call set verInfo=%%b
-		)
-		@rem ----
-		call set verInfo=%verInfo:~12%
-		call set verInfo=%verInfo:,=.%
-		
-		echo "cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% .."
-        cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
-    )
-)
+	echo.%verInfo%
+	call set verInfo=%verInfo:~12%
+	echo. %verInfo%
+	call set verInfo=%verInfo:,=.%
+	echo. %verInfo%
+
+	if "%APPVEYOR_FORCED_BUILD%"=="True" (
+		echo.APPVEYOR_FORCED_BUILD
+		cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
+	)
+	if "%APPVEYOR_REPO_TAG%"=="True" (
+		echo.APPVEYOR_REPO_TAG
+		cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
+	)	
 
 cmake --build . --config Release -- /m
 if %errorlevel% neq 0 exit /b %errorlevel%
