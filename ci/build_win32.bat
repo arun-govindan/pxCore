@@ -50,21 +50,13 @@ for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\sr
 			echo trace 1 %%b
 			call set verInfo=%%b
 	)
-	echo.%verInfo%
 	call set verInfo=%verInfo:~12%
-	echo. %verInfo%
 	call set verInfo=%verInfo:,=.%
 	echo. %verInfo%
 
-	if "%APPVEYOR_FORCED_BUILD%"=="True" (
-		echo.APPVEYOR_FORCED_BUILD
-		cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
-	)
-	if "%APPVEYOR_REPO_TAG%"=="True" (
-		echo.APPVEYOR_REPO_TAG
-		cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
-	)	
-
+	if "%APPVEYOR_FORCED_BUILD%"=="True" cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
+	if "%APPVEYOR_REPO_TAG%"=="True" cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
+	
 cmake --build . --config Release -- /m
 if %errorlevel% neq 0 exit /b %errorlevel%
 
