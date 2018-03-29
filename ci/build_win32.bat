@@ -23,9 +23,7 @@ set "VSCMD_START_DIR=%CD%"
 call "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Auxiliary/Build/vcvars32.bat" x86
 
 
-set verInfo=a
-set dotReplace=.
-set prodVer=b
+
 @rem build dependencies
 cd examples/pxScene2d/external
 @rem  call buildWindows.bat
@@ -48,26 +46,26 @@ cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
 )
 	
 if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
-    
-	if "%APPVEYOR_REPO_TAG%"=="false" (
+	echo.In APPVEYOR_SCHEDULED_BUILD 0
+    if "%APPVEYOR_REPO_TAG%"=="false" (
+		echo. Repo tag false
+		cmake -DCMAKE_VERBOSE_MAKEFILE=ON  ..
+	)
+	if "%APPVEYOR_REPO_TAG%"=="true" (
+		echo. Repo tag true
 	    @rem tag build, add build version :  Use ProductVersion and FILEVERSION from pxscene2d/src/win/pxscene.rc 
-		setlocal enabledelayedexpansion
-		@echo on
+		@rem ----
+		echo "In appveryor tag false 2"
+	    for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') DO ( 
+		echo trace 1 %%b
+		call set verInfo=%%b
+		)
+		@rem ----
+		call set verInfo=%verInfo:~12%
+		call set verInfo=%verInfo:,=.%
 		
-		echo %verInfo%
-		for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') do set "verInfo=%%b"
-		echo verInfo is
-		set "verInfo=bcd"
-		echo %verInfo%
-		for /f "tokens=2,* delims=\ " %%a in ("%verInfo%") do set "prodVer=%%a"
-		echo %prodVer%
-		
-		set prodVer=%prodVer:,=!dotReplace!%
-		echo %prodVer%
-		echo completed
-		setlocal
-		echo "cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%prodVer% .."
-        cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%prodVer% ..
+		echo "cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% .."
+        cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
     )
 )
 
