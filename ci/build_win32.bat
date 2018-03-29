@@ -55,7 +55,7 @@ for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\sr
 	echo. %verInfo%
 
 	if "%APPVEYOR_FORCED_BUILD%"=="True" cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
-	if "%APPVEYOR_REPO_TAG%"=="True" cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
+	if "%APPVEYOR_REPO_TAG%"=="true" cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION=%verInfo% ..
 	
 cmake --build . --config Release -- /m
 if %errorlevel% neq 0 exit /b %errorlevel%
