@@ -26,7 +26,7 @@ call "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Auxiliary
 
 @rem build dependencies
 cd examples/pxScene2d/external
-@rem call buildWindows.bat
+call buildWindows.bat
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 @rem Avoid using link.exe from that paths
