@@ -91,9 +91,9 @@
       ~~~~
   
     b. To use system libraries for external libs during pxscene build, install libs on the system. To build just node, duktape and breakpad with the patches necessary for pxscene, do the following.
-      ~~~~
+      
       For Mac and Linux OS.
-      ~~~~
+     
       Build duktape
       ~~~~ 
       cd examples/pxScene2d/external/dukluv/
@@ -118,9 +118,9 @@
       ./configure
       make
       
-      ~~~~
+      ~~~~	
       For Windows
-      ~~~~
+      
       Build Duktape
       ~~~~
       cd examples/pxScene2d/external/dukluv/
