@@ -43,7 +43,7 @@ fi
 if [ "$TRAVIS_OS_NAME" = "osx" ] ;
 then
   date
-  brew update;
+  #brew update;
   date
   #brew upgrade cmake;
   brew install quilt
