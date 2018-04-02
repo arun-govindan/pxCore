@@ -145,7 +145,7 @@
       ~~~~
 
 4. Build **pxScene**
-    ~~~~
+    
     On following step 3b, Specify -DPREFER_SYSTEM_LIBRARIES=ON to use system libraries rather than libraries from externals directory.
     Note :  If a dependent library is not found installed on the system, then the version in externals will be used.
     ~~~~
