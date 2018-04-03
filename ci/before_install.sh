@@ -1,5 +1,6 @@
 #!/bin/sh
-
+echo "Time trace before_install start" 
+date
 travis_retry() {
   local result=0
   local count=1
@@ -118,3 +119,6 @@ then
 	fi
 	sudo pip install codecov
 fi
+
+echo "Time trace before_install end" 
+date

@@ -1,5 +1,7 @@
 #!/bin/sh
 #This script executes necessary javascript files and mesaures pxleak checks and memory leaks checks
+echo "Time trace execute osx start" 
+date
 
 if [ -z "${TRAVIS_BUILD_DIR}" ]
 then
@@ -165,3 +167,5 @@ else
 	echo "Valgrind reports success !!!!!!!!!!!"
 fi
 exit 0;
+echo "Time trace execute osx end" 
+date

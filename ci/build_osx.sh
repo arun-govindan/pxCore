@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "Time trace build osx start" 
+date
 BUILDLOGS=$TRAVIS_BUILD_DIR/logs/build_logs
 
 mkdir -p $TRAVIS_BUILD_DIR/logs   # make 'logs' if necessary
@@ -111,3 +113,5 @@ fi
 
 cd $TRAVIS_BUILD_DIR
 exit 0;
+echo "Time trace build osx end" 
+date

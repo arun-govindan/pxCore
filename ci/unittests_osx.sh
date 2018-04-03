@@ -1,4 +1,6 @@
 #!/bin/sh
+echo "Time trace unit test start" 
+date
 checkError()
 {
   if [ "$1" -ne 0 ]
@@ -106,3 +108,5 @@ then
 else
 	exit 0;
 fi
+echo "Time trace unit test end" 
+date

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "Time trace script start" 
+date
 EXECLOGS=$TRAVIS_BUILD_DIR/logs/exec_logs
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -83,3 +85,5 @@ then
 fi
 
 exit 0;
+echo "Time trace script end" 
+date
