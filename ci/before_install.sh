@@ -63,7 +63,7 @@ then
   cmake --version
   man lldb
   echo "##########in stall quilt started 4563"
-  brew install quilt
+    brew install lcov
   echo "##########in stall quilt started 4563344"
   brew install quilt
   echo "##########install completed 25132"
@@ -71,7 +71,6 @@ then
   then
 #    brew install lighttpd
     brew install gcovr
-    brew install lcov
     brew install ccache
     ls -al $HOME/.ccache
   fi
