@@ -64,6 +64,8 @@ then
   man lldb
   echo "##########in stall quilt started 4563"
   brew install quilt
+  echo "##########in stall quilt started 4563344"
+  brew install quilt
   echo "##########install completed 25132"
   if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]
   then
