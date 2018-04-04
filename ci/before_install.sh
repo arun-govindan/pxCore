@@ -45,10 +45,6 @@ if [ "$TRAVIS_OS_NAME" = "osx" ] ;
 then
   #brew update;
   #brew upgrade cmake;
-  echo "Display brew information starts"
-  brew info
-  brew --version
-  echo "Display brew information ends"
   brew install quilt
   sudo /usr/sbin/DevToolsSecurity --enable
   lldb --version
