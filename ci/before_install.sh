@@ -43,14 +43,15 @@ fi
 
 if [ "$TRAVIS_OS_NAME" = "osx" ] ;
 then
-  brew update;
+  #brew update;
   #brew upgrade cmake;
-  brew install quilt
+  brew upgrade quilt
   sudo /usr/sbin/DevToolsSecurity --enable
   lldb --version
   lldb --help
   cmake --version
   man lldb
+  brew install quilt
 fi
 
 #install lighttpd, code coverage binaries for mac
