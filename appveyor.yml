@@ -47,5 +47,6 @@ build_script:
 test: off
 
 cache:		
-  - c:/dw/pxCore/examples/pxScene2d/external/libnode-v6.9.0
+  - c:/dw/pxCore/examples/pxScene2d/external/libnode-v6.9.0/build/Release/lib/v8_base_0.lib
+  - c:/dw/pxCore/examples/pxScene2d/external/libnode-v6.9.0/build/Release/lib/v8_base_1.lib
 # validator: https://ci.appveyor.com/tools/validate-yaml
