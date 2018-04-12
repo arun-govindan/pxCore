@@ -46,4 +46,6 @@ build_script:
 
 test: off
 
+ cache:		
+   - %s%\examples\pxScene2d\external\libnode-v6.9.0
 # validator: https://ci.appveyor.com/tools/validate-yaml
