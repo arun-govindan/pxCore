@@ -32,7 +32,7 @@ set buildNeeded=1
 break
 )
 )
-set buildNeeded=0
+set buildNeeded=1
 
 echo ----------------buildNeeded : %buildNeeded%
 if %buildNeeded% == 1 (
