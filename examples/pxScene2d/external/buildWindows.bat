@@ -16,9 +16,32 @@ copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 
 echo. =================================== starting of buildWindows
 time /t
+
+
+
+
+@echo off
+setlocal enabledelayedexpansion
+set buildNeeded=0
+git diff-tree --name-only --no-commit-id -r %1	
+echo -----------------------
+FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r %1`) DO (
+echo.%%F|findstr /C:"external"
+if !errorlevel! == 0 (
+set buildNeeded=1
+break
+)
+)
+echo ----------------buildNeeded : %buildNeeded%
+if %buildNeeded% == 1 (
 cd vc.build\
 msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
 cd ..
+)
+
+
+
+
 echo. =================================== end of external solutiton
 time /t
 cd breakpad-chrome_55
