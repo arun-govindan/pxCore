@@ -33,12 +33,14 @@ break
 )
 )
 
-echo ---------------- trace 1
+
 cd vc.build
+echo ---------------- trace 1
 if EXIST  builds (
-cd builds
+echo ---------------- trace 1.1
+cd builds\
 echo ---------------- trace 2
-%cd%
+
 ls -l |wc -l >file.txt
 echo ---------------- trace 4
 set /p fileCount=<file.txt
@@ -50,7 +52,7 @@ cd ..\
 echo ---------------- trace 5
 )
 cd ..\
-%cd%
+
 )
 echo ----------------buildNeeded : %buildNeeded%
 if %buildNeeded% == 1 (
