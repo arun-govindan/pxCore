@@ -23,15 +23,25 @@ time /t
 @echo off
 setlocal enabledelayedexpansion
 set buildNeeded=0
-git diff-tree --name-only --no-commit-id -r %1	
+git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%	
 echo -----------------------
-FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r %1`) DO (
+FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%`) DO (
 echo.%%F|findstr /C:"external"
 if !errorlevel! == 0 (
 set buildNeeded=1
 break
 )
 )
+
+cd vc.build\builds
+ls -l |wc -l >file.txt
+set /p fileCount=<file.txt
+
+if %fileCount% LSS 20 (
+set buildNeeded=1
+)
+cd ../../
+
 echo ----------------buildNeeded : %buildNeeded%
 if %buildNeeded% == 1 (
 cd vc.build\
