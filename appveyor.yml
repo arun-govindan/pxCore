@@ -49,5 +49,5 @@ build_script:
 test: off
 
 cache:		
-    - c:/pxCore/AR/pxCoreTest/pxcore/examples/pxScene2d/external/vc.build/builds
+    - c:/dw/pxCore/pxcore/examples/pxScene2d/external/vc.build/builds
 # validator: https://ci.appveyor.com/tools/validate-yaml
