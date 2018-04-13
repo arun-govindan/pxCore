@@ -34,14 +34,15 @@ break
 )
 
 cd vc.build\builds
+%cd%
 ls -l |wc -l >file.txt
 set /p fileCount=<file.txt
 
 if %fileCount% LSS 20 (
 set buildNeeded=1
 )
-cd ../../
-
+cd ..\..\
+%cd%
 echo ----------------buildNeeded : %buildNeeded%
 if %buildNeeded% == 1 (
 cd vc.build\
