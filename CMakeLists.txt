@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(pxscene2d)
 
+
 option(BUILD_PXCORE "BUILD_PXCORE" ON)
 option(BUILD_PXSCENE "BUILD_PXSCENE" ON)
 option(BUILD_PX_TESTS "BUILD_PX_TESTS" OFF)
