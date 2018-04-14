@@ -32,7 +32,14 @@ set buildNeeded=1
 break
 )
 )
+cd c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/
+ls -l
+cd ..\..\
+cd vc.build
+
+if NOT EXIST builds (
 set buildNeeded=1
+)
 
 echo ----------------buildNeeded : %buildNeeded%
 if %buildNeeded% == 1 (
