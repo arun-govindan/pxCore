@@ -40,7 +40,7 @@ cd vc.build
 if NOT EXIST builds (
 set buildNeeded=1
 )
-
+cd ..
 echo ----------------buildNeeded : %buildNeeded%
 if %buildNeeded% == 1 (
 cd vc.build\
