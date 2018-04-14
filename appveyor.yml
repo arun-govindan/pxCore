@@ -49,5 +49,23 @@ build_script:
 test: off
 
 cache:		
-    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/*
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/WinSparkle.dll 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/WinSparkle.lib 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/WinSparkle_expat.lib  
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/glew32s.lib 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/libjpeg.lib 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/libpng16.lib    
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/pthreadVC2.dll 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/pthreadVC2.lib 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/zlib.bsc
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/WinSparkle.exp
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/WinSparkle.pdb 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/WinSparkle_wx.lib  
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/freetype253MT_D.lib 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/libcurld.lib 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/libpng16.bsc 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/libturbojpeg.lib 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/pthreadVC2.exp 
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/pthreadVC2.pdb
+    - c:/dw/pxCore/examples/pxScene2d/external/vc.build/builds/zlib.lib
 # validator: https://ci.appveyor.com/tools/validate-yaml
