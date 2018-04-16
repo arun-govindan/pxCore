@@ -54,7 +54,6 @@ if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" 
 then
   ccache -s
 fi
-
 #update release  notes and info.plist in github
 if [ "$TRAVIS_EVENT_TYPE" = "api" ] && [ "$UPDATE_VERSION" = "true" ] ;
 then
