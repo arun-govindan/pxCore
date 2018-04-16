@@ -16,7 +16,6 @@
 
 */
 
-
 // pxImage.h
 
 #ifndef PX_IMAGE_H

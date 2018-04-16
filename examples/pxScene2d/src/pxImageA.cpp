@@ -17,7 +17,6 @@
 */
 
 // pxText.h
-
 #include "pxImageA.h"
 #include "pxContext.h"
 

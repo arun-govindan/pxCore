@@ -9,7 +9,6 @@
 #include "util.h"
 #include "util-inl.h"
 namespace node {
-
 using v8::Boolean;
 using v8::Context;
 using v8::HandleScope;

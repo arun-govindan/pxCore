@@ -17,7 +17,6 @@
 */
 
 
-
 // pxImage.cpp
 
 #include "rtString.h"
