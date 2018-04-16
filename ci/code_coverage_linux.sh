@@ -6,6 +6,7 @@ echo "gcda printed"
 rm -rf reports
 rm -rf tracefile
 
+
 pwd
 
 lcov -c -d temp/src/CMakeFiles/rtCore_s.dir -c -o tracefile
