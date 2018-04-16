@@ -8,7 +8,6 @@
 #include "tcp_wrap.h"
 #include "util.h"
 #include "util-inl.h"
-
 namespace node {
 
 using v8::Boolean;
