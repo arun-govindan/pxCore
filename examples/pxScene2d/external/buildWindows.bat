@@ -41,6 +41,8 @@ set buildNeeded=1
 cd ..
 echo ----------------buildNeeded : %buildNeeded%
 if %buildNeeded% == 1 (
+echo ---------path  : %cd%
+
 cd vc.build\
 msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
 cd ..
