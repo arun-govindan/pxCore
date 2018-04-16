@@ -16,40 +16,36 @@ copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 
 echo. =================================== starting of buildWindows
 time /t
-
-
-
-
 @echo off
 setlocal enabledelayedexpansion
 set buildNeeded=0
 git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%	
 echo -----------------------
 FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%`) DO (
-echo.%%F|findstr /C:"external"
-if !errorlevel! == 0 (
-set buildNeeded=1
-break
-)
+ echo.%%F|findstr /C:"external"
+  if !errorlevel! == 0 (
+   set buildNeeded=1
+   echo "External library files are modified. Need to build external : %buildNeeded% .
+   GOTO BREAK
+  )
 )
 
+
+:BREAK
 cd vc.build
-
 if NOT EXIST builds (
-set buildNeeded=1
+  echo Cache not available. Need to build external : %buildNeeded% .
+  set buildNeeded=1
 )
 cd ..
-echo ----------------buildNeeded : %buildNeeded%
+
+
 if %buildNeeded% == 1 (
-echo ---------path  : %cd%
-
-cd vc.build\
-msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
-cd ..
+  echo Building external library  : %cd%
+  cd vc.build\
+  msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
+  cd ..
 )
-
-
-
 
 echo. =================================== end of external solutiton
 time /t
