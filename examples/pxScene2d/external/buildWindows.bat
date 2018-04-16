@@ -25,21 +25,19 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r 
  echo.%%F|findstr /C:"external"
   if !errorlevel! == 0 (
    set buildNeeded=1
-   echo "External library files are modified. Need to build external : %buildNeeded% .
+   echo External library files are modified. Need to build external : !buildNeeded! .
    GOTO BREAK
   )
 )
 
-
-:BREAK
 cd vc.build
 if NOT EXIST builds (
-  echo Cache not available. Need to build external : %buildNeeded% .
   set buildNeeded=1
+  echo Cache not available. Need to build external : !buildNeeded!.
 )
 cd ..
 
-
+:BREAK
 if %buildNeeded% == 1 (
   echo Building external library  : %cd%
   cd vc.build\
