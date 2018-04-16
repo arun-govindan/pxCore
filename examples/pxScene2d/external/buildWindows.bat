@@ -12,9 +12,33 @@ copy /y curl-7.40.0\include\curl\curlbuild-win.h curl-7.40.0\include\curl\curlbu
 copy /y libpng-1.6.28\scripts\pnglibconf.h.prebuilt libpng-1.6.28\pnglibconf.h
 copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 
-cd vc.build\
-msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
+@echo off
+setlocal enabledelayedexpansion
+set buildNeeded=0
+
+FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%`) DO (
+ echo.%%F|findstr /C:"external"
+  if !errorlevel! == 0 (
+   set buildNeeded=1
+   echo External library files are modified. Need to build external : !buildNeeded! .
+   GOTO BREAK
+  )
+)
+
+cd vc.build
+if NOT EXIST builds (
+  set buildNeeded=1
+  echo Cache not available. Need to build external : !buildNeeded!.
+)
 cd ..
+
+:BREAK
+if %buildNeeded% == 1 (
+  echo Building external library  : %cd%
+  cd vc.build\
+  msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
+  cd ..
+)
 
 cd breakpad-chrome_55
 CALL gyp\gyp.bat src\client\windows\breakpad_client.gyp --no-circular-check
