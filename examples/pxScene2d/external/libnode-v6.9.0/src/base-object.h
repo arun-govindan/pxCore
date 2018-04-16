@@ -11,6 +11,7 @@ class Environment;
 
 
 
+
 class BaseObject {
  public:
   inline BaseObject(Environment* env, v8::Local<v8::Object> handle);
