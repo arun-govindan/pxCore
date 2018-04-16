@@ -25,7 +25,7 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r 
  echo.%%F|findstr /C:"external"
   if !errorlevel! == 0 (
    set buildNeeded=1
-   echo External library files are modified. Need to build external : !buildNeeded! .
+   echo. External library files are modified. Need to build external : !buildNeeded! .
    GOTO BREAK
   )
 )
@@ -33,17 +33,26 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r 
 cd vc.build
 if NOT EXIST builds (
   set buildNeeded=1
-  echo Cache not available. Need to build external : !buildNeeded!.
+  echo. Cache not available. Need to build external : !buildNeeded!.
 )
 cd ..
 
 :BREAK
 if %buildNeeded% == 1 (
-  echo Building external library  : %cd%
+  echo. Building external library  : %cd%
   cd vc.build\
   msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
   cd ..
 )
+
+echo. Verifying the download and unzip time.
+time /t
+curl http://96.116.56.119/edge/windows/node_cache.7z -o node_cache.7z
+ls -l node_cache.7z
+7z x node_cache.7z
+ls -l genfiles\
+echo. download and untar completed
+time /t
 
 echo. =================================== end of external solutiton
 time /t
