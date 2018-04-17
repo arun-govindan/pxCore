@@ -40,7 +40,7 @@ if NOT EXIST builds (
 cd ..
 
 :BREAK
-if %buildExternal% == 1 (
+if %buildExternal% == 0 (
   echo. Building external library  : %cd%
   cd vc.build\
   msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
@@ -76,7 +76,7 @@ cd ..\..\..\..\
 
 echo. =================================== end of breakpad
 time /t
-if "%buildLibnode%" == "1" (
+if %buildLibnode% == 0 (
 cd libnode-v6.9.0
 CALL vcbuild.bat x86 nosign
 cd ..
