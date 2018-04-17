@@ -55,6 +55,12 @@ ls -l node_cache.7z
 
 if "%errorlevel%" == "0" (
 echo. copying files from %cd%
+cd libnode-v6.9.0\
+ls -l 
+cd ..
+echo.
+echo.
+echo.
 md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\build
 xcopy build c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\build\ /S /E /Y
 cd libnode-v6.9.0\build
@@ -69,7 +75,7 @@ ls -l
 cd ..\..\..\
 echo. download genfiles completed
 
-md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release
+@rem md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release
 xcopy Release c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release\ /S /E /Y
 cd libnode-v6.9.0\Release
 ls -l
