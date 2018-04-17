@@ -68,7 +68,6 @@ time /t
 curl http://96.116.56.119/node_cache/node_cache.7z -o node_cache.7z
 set cacheDownload=%errorlevel%
 
-
 if NOT "!cacheDownload!" == "0" (
   echo. Downloading of cache has been failed.
   set buildLibnode=1
@@ -77,25 +76,30 @@ if NOT "!cacheDownload!" == "0" (
   if !cacheDownload! == 0 (
     echo. xtract copying files from %cd%
     7z x node_cache.7z
+    set cacheDownload=%errorlevel%
+	if NOT "!cacheDownload!" == "0" (
+	  echo. Cache archive is invalid.
+	  set buildLibnode=1
+	)
+    
+	if !cacheDownload! == 0 (
+	  md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\build
+      xcopy build c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\build\ /S /E /Y
+      echo. download build completed
 
-    md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\build
-    xcopy build c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\build\ /S /E /Y
-    echo. download build completed
+      md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\tools\msvs\genfiles
+      xcopy genfiles c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\tools\msvs\genfiles\ /S /E /Y
+      echo. download genfiles completed
 
-    md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\tools\msvs\genfiles
-    xcopy genfiles c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\tools\msvs\genfiles\ /S /E /Y
-    echo. download genfiles completed
-
-    md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release
-    xcopy Release c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release\ /S /E /Y
-    echo. download Release completed
+      md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release
+      xcopy Release c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release\ /S /E /Y
+      echo. download Release completed
+	)
   )
 
   echo. download, untar and copy completed
   time /t
 )
-
-
 
 
 time /t
@@ -113,6 +117,16 @@ if %buildLibnode% == 1 (
   cd ..
   echo. =================================== end of libnode
   time /t
+  
+  @rem this is the place to tar and upload libnode cache to build server.
+  md Release build genfiles
+  xcopy libnode-v6.9.0\tools\msvs\genfiles\* genfiles\  /S /E /Y
+  xcopy libnode-v6.9.0\build\* build\  /S /E /Y
+  xcopy libnode-v6.9.0\Release\* Release\ /S /E /Y
+  for /d %x in (build\Release\obj\*) do @rd /s /q "%x"
+  
+  7z.exe a C:\pxCore\AR\pxCore\node_cache.7z C:\pxCore\AR\pxCore\examples\pxScene2d\external\genfiles C:\pxCore\AR\pxCore\examples\pxScene2d\external\build C:\pxCore\AR\pxCore\examples\pxScene2d\external\Release
+  ls -l node_cache.7z
 )
 
 cd dukluv
