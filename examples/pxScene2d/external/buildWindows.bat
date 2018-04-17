@@ -28,10 +28,11 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r 
   if !errorlevel! == 0 (
    set buildExternal=1
    echo. External library files are modified. Need to build external : !buildExternal! .
-   GOTO BREAK
+   GOTO BREAK_LOOP1
   )
 )
 
+:BREAK_LOOP1
 cd vc.build
 if NOT EXIST builds (
   set buildExternal=1
@@ -39,7 +40,16 @@ if NOT EXIST builds (
 )
 cd ..
 
-:BREAK
+FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%`) DO (
+ echo.%%F|findstr /C:"libnode-v6.9.0"
+  if !errorlevel! == 0 (
+   set buildLibnode=1
+   echo. libnode files are modified. Need to build libnode : !buildLibnode! .
+   GOTO BREAK_LOOP2
+  )
+)
+
+:BREAK_LOOP2
 if %buildExternal% == 0 (
   echo. Building external library  : %cd%
   cd vc.build\
@@ -47,45 +57,37 @@ if %buildExternal% == 0 (
   cd ..
 )
 
+set cacheDownload=0
+if %buildLibnode% == 0 (
 echo. Verifying the download and unzip time.
 time /t
 curl http://96.116.56.119/edge/windows/node_cache.7z -o node_cache.7z
-ls -l node_cache.7z
+set cacheDownload=%errorlevel%
+
+if !cacheDownload! != 0(
+echo. Downloading of cache has been failed.
+set buildLibnode=1
+)
+
+if !cacheDownload! == 0 (
+echo. xtract copying files from %cd%
 7z x node_cache.7z
 
-if "%errorlevel%" == "0" (
-echo. copying files from %cd%
-cd libnode-v6.9.0\
-ls -l 
-cd ..
-echo.
-echo.
-echo.
 md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\build
 xcopy build c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\build\ /S /E /Y
-cd libnode-v6.9.0\build
-ls -l
-cd ..\..\
 echo. download build completed
 
 md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\tools\msvs\genfiles
 xcopy genfiles c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\tools\msvs\genfiles\ /S /E /Y
-cd libnode-v6.9.0\tools\msvs\genfiles
-ls -l
-cd ..\..\..\..\
 echo. download genfiles completed
 
 md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release
 xcopy Release c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release\ /S /E /Y
-cd libnode-v6.9.0\Release
-ls -l
-cd ../../
-
 echo. download Release completed
+)
 
 echo. download, untar and copy completed
 time /t
-set buildLibnode=1
 )
 
 
@@ -97,10 +99,10 @@ CALL gyp\gyp.bat src\client\windows\breakpad_client.gyp --no-circular-check
 cd src\client\windows
 msbuild breakpad_client.sln /p:Configuration=Release /p:Platform=Win32 /m
 cd ..\..\..\..\
-
 echo. =================================== end of breakpad
+
 time /t
-if %buildLibnode% == 0 (
+if %buildLibnode% == 1 (
 cd libnode-v6.9.0
 CALL vcbuild.bat x86 nosign
 cd ..
