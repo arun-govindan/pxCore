@@ -6,6 +6,9 @@
  pause
  goto :eof
 )
+@echo off
+setlocal enabledelayedexpansion
+
 echo. =================================== starting of buildWindows
 time /t
 
@@ -16,8 +19,7 @@ copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 
 echo. =================================== starting of buildWindows
 time /t
-@echo off
-setlocal enabledelayedexpansion
+
 set buildExternal=0
 set buildLibnode=0
 
@@ -49,6 +51,7 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r 
   )
 )
 
+@rem value needs to be changed from 0 to 1
 :BREAK_LOOP2
 if %buildExternal% == 0 (
   echo. Building external library  : %cd%
@@ -64,11 +67,13 @@ time /t
 curl http://96.116.56.119/edge/windows/node_cache.7z -o node_cache.7z
 set cacheDownload=%errorlevel%
 
-if NOT !cacheDownload! == 0(
+echo. check for the cacheDownload value !cacheDownload! is not 0
+if NOT "!cacheDownload!" == "0" (
 echo. Downloading of cache has been failed.
 set buildLibnode=1
 )
 
+echo. check for the cacheDownload value !cacheDownload! is  0
 if !cacheDownload! == 0 (
 echo. xtract copying files from %cd%
 7z x node_cache.7z
