@@ -64,7 +64,7 @@ time /t
 curl http://96.116.56.119/edge/windows/node_cache.7z -o node_cache.7z
 set cacheDownload=%errorlevel%
 
-if !cacheDownload! != 0(
+if NOT !cacheDownload! == 0(
 echo. Downloading of cache has been failed.
 set buildLibnode=1
 )
