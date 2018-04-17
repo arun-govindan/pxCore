@@ -72,10 +72,10 @@ md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\tools\msvs\genfiles
 xcopy genfiles c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\tools\msvs\genfiles\ /S /E /Y
 cd libnode-v6.9.0\tools\msvs\genfiles
 ls -l
-cd ..\..\..\
+cd ..\..\..\..\
 echo. download genfiles completed
 
-@rem md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release
+md c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release
 xcopy Release c:\dw\pxCore\examples\pxScene2d\external\libnode-v6.9.0\Release\ /S /E /Y
 cd libnode-v6.9.0\Release
 ls -l
