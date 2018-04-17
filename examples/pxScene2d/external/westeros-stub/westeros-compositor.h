@@ -4,6 +4,8 @@
 //#include "westeros-render.h"
 
 typedef unsigned int uint32_t;
+
+
 typedef int wl_fixed_t;
 
 typedef struct _WstRect

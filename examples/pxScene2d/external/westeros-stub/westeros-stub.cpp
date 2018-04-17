@@ -6,6 +6,8 @@
 
 
 
+
+
 #include "westeros-compositor.h"
 
 #define WST_MAX_ERROR_DETAIL (512)
