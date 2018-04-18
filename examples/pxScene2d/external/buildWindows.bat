@@ -20,38 +20,48 @@ copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 echo. =================================== starting of buildWindows
 time /t
 
+
+
 set buildExternal=0
 set buildLibnode=0
 
-git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%	
-echo -----------------------
-FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%`) DO (
- echo.%%F|findstr "zlib-1.2.11 WinSparkle pthread-2.9 libpng-1.6.28 libjpeg-turbo-1.5.1 glew-2.0.0 freetype-2.5.2 curl-7.40.0 jpeg-9a"
-  if !errorlevel! == 0 (
+if NOT "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
+  git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%	
+  echo -----------------------
+  FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%`) DO (
+    echo.%%F|findstr "zlib-1.2.11 WinSparkle pthread-2.9 libpng-1.6.28 libjpeg-turbo-1.5.1 glew-2.0.0 freetype-2.5.2 curl-7.40.0 jpeg-9a"
+    if !errorlevel! == 0 (
+      set buildExternal=1
+      echo. External library files are modified. Need to build external : !buildExternal! .
+      GOTO BREAK_LOOP1
+    )
+  )
+
+  :BREAK_LOOP1
+  cd vc.build
+  if NOT EXIST builds (
     set buildExternal=1
-    echo. External library files are modified. Need to build external : !buildExternal! .
-    GOTO BREAK_LOOP1
+    echo. Cache not available. Need to build external : !buildExternal!.
+  )
+  cd ..
+
+  FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%`) DO (
+    echo.%%F|findstr /C:"libnode-v6.9.0"
+    if !errorlevel! == 0 (
+      set buildLibnode=1
+      echo. libnode files are modified. Need to build libnode : !buildLibnode! .
+      GOTO BREAK_LOOP2
+    )
   )
 )
 
-:BREAK_LOOP1
-cd vc.build
-if NOT EXIST builds (
+@rem for edge builds, do full compilation, so it includes all pdb files.
+if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
   set buildExternal=1
-  echo. Cache not available. Need to build external : !buildExternal!.
-)
-cd ..
-
-FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r %APPVEYOR_REPO_COMMIT%`) DO (
- echo.%%F|findstr /C:"libnode-v6.9.0"
-  if !errorlevel! == 0 (
-   set buildLibnode=1
-   echo. libnode files are modified. Need to build libnode : !buildLibnode! .
-   GOTO BREAK_LOOP2
-  )
+  set buildLibnode=1
 )
 
-@rem value needs to be changed from 0 to 1
+
 :BREAK_LOOP2
 if %buildExternal% == 1 (
   echo. Building external library  : %cd%
@@ -119,14 +129,13 @@ if %buildLibnode% == 1 (
   time /t
   
   @rem this is the place to tar and upload libnode cache to build server.
-  md Release build genfiles
-  xcopy libnode-v6.9.0\tools\msvs\genfiles\* genfiles\  /S /E /Y
-  xcopy libnode-v6.9.0\build\* build\  /S /E /Y
-  xcopy libnode-v6.9.0\Release\* Release\ /S /E /Y
-  for /d %x in (build\Release\obj\*) do @rd /s /q "%x"
-  
-  7z.exe a C:\pxCore\AR\pxCore\node_cache.7z C:\pxCore\AR\pxCore\examples\pxScene2d\external\genfiles C:\pxCore\AR\pxCore\examples\pxScene2d\external\build C:\pxCore\AR\pxCore\examples\pxScene2d\external\Release
-  ls -l node_cache.7z
+  @rem md Release build genfiles
+  @rem xcopy libnode-v6.9.0\tools\msvs\genfiles\* genfiles\  /S /E /Y
+  @rem xcopy libnode-v6.9.0\build\* build\  /S /E /Y
+  @rem xcopy libnode-v6.9.0\Release\* Release\ /S /E /Y
+ 
+  @rem  7z.exe a C:\pxCore\AR\pxCore\node_cache.7z C:\pxCore\AR\pxCore\examples\pxScene2d\external\genfiles C:\pxCore\AR\pxCore\examples\pxScene2d\external\build C:\pxCore\AR\pxCore\examples\pxScene2d\external\Release
+  @rem ls -l node_cache.7z
 )
 
 cd dukluv
