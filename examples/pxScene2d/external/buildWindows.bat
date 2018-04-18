@@ -7,6 +7,8 @@
  goto :eof
 )
 
+
+
 copy /y libjpeg-turbo-1.5.1\win_temp\* libjpeg-turbo-1.5.1\
 copy /y curl-7.40.0\include\curl\curlbuild-win.h curl-7.40.0\include\curl\curlbuild.h
 copy /y libpng-1.6.28\scripts\pnglibconf.h.prebuilt libpng-1.6.28\pnglibconf.h
