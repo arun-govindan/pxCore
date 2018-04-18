@@ -25,13 +25,16 @@ platform: x86
 image: Visual Studio 2017
 
 environment:
+  CCACHE_DIR: "%APPVEYOR_BUILD_FOLDER%\\.ccache"
   S: "c:/dw/pxCore"
+ 
 
 clone_folder: "c:/dw/pxCore"
 
 # Build pipeline: https://www.appveyor.com/docs/build-configuration/
 init:
   - echo environment setup...
+  - set
   - git config --system core.longpaths true
   - ps: "ls \"C:/\""
 
@@ -45,5 +48,8 @@ build_script:
   - call ci/build_win32.bat
 
 test: off
+
+cache:
+  - .ccache
 
 # validator: https://ci.appveyor.com/tools/validate-yaml
