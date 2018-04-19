@@ -208,7 +208,9 @@ if defined nobuild goto sign
 @rem Build the sln with msbuild.
 set "msbplatform=Win32"
 if "%target_arch%"=="x64" set "msbplatform=x64"
-msbuild node.sln /m /t:%target% /p:Configuration=%config% /p:Platform=%msbplatform% /clp:NoSummary;NoItemAndPropertyList;Verbosity=minimal /nologo
+echo. msbuild node.sln /m:4 /t:%target% /p:Configuration=%config% /p:Platform=%msbplatform% /clp:NoSummary;NoItemAndPropertyList;Verbosity=minimal /nologo
+msbuild node.sln /m:4 /t:%target% /p:Configuration=%config% /p:Platform=%msbplatform% /clp:NoSummary;NoItemAndPropertyList;Verbosity=minimal /nologo
+
 if errorlevel 1 goto exit
 if "%target%" == "Clean" goto exit
 
