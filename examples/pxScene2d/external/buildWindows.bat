@@ -8,14 +8,13 @@
 )
 
 
-
 copy /y libjpeg-turbo-1.5.1\win_temp\* libjpeg-turbo-1.5.1\
 copy /y curl-7.40.0\include\curl\curlbuild-win.h curl-7.40.0\include\curl\curlbuild.h
 copy /y libpng-1.6.28\scripts\pnglibconf.h.prebuilt libpng-1.6.28\pnglibconf.h
 copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 
 cd vc.build\
-msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
+msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /verbosity:quiet /m
 cd ..
 
 cd breakpad-chrome_55
