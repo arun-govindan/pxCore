@@ -69,6 +69,7 @@
       <AssemblerListingLocation>$(IntDir}</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>$(IntDir)</ObjectFileName>
+	  <DebugInformationFormat>None</DebugInformationFormat>
       <ProgramDataBaseFileName>$(IntDir)$(ProjectName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4273</DisableSpecificWarnings>
     </ClCompile>
