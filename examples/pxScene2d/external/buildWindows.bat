@@ -14,13 +14,13 @@ copy /y libpng-1.6.28\scripts\pnglibconf.h.prebuilt libpng-1.6.28\pnglibconf.h
 copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 
 cd vc.build\
-msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /verbosity:quiet /m
+msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /p:DebugType=None /verbosity:quiet  /m
 cd ..
 
 cd breakpad-chrome_55
 CALL gyp\gyp.bat src\client\windows\breakpad_client.gyp --no-circular-check
 cd src\client\windows
-msbuild breakpad_client.sln /p:Configuration=Release /p:Platform=Win32 /m
+msbuild breakpad_client.sln /p:Configuration=Release /p:DebugType=None /p:Platform=Win32 /m
 cd ..\..\..\..\
 
 cd libnode-v6.9.0
