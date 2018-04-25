@@ -43,7 +43,6 @@ if %buildExternal% == 1 (
   msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
   cd ..
 )
-
 REM --------- BREAKPAD
 
 cd breakpad-chrome_55
