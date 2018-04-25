@@ -32,6 +32,7 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --name-only --no-commit-id -r 
 cd vc.build
 if NOT EXIST builds (
   set buildExternal=1
+  set buildLibnode=1
   echo Cache not available. Need to build external : !buildNeeded!.
 )
 cd ..
