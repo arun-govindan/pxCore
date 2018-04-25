@@ -51,7 +51,7 @@ if %buildExternal% == 1 (
   msbuild external.sln /p:Configuration=Release /p:Platform=Win32 /m
   cd ..
 )
-
+GOTO SKIP_DOWNLOAD
 set cacheDownload=0
 if %buildLibnode% == 0 (
 echo. Verifying the download and unzip time.
@@ -85,6 +85,8 @@ if NOT "!cacheDownload!" == "0" (
   echo. download, untar and copy completed
   time /t
 )
+
+:SKIP_DOWNLOAD
 cd breakpad-chrome_55
 CALL gyp\gyp.bat src\client\windows\breakpad_client.gyp --no-circular-check
 cd src\client\windows
