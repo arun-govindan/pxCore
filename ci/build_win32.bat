@@ -39,11 +39,11 @@ cd build-win32
 
 @rem build pxScene
 if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
-cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
+cmake -DSUPPORT_DUKTAPE=OFF -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
 )
 
 if "%APPVEYOR_SCHEDULED_BUILD%"=="" (
-cmake -DCMAKE_VERBOSE_MAKEFILE=ON ..
+cmake -DSUPPORT_DUKTAPE=OFF -DCMAKE_VERBOSE_MAKEFILE=ON ..
 )
 
 cmake --build . --config Release -- /m
