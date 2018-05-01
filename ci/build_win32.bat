@@ -36,7 +36,7 @@ set PATH=%PATH:c:\cygwin64\bin;=%
 cd "%BASE_DIR%"
 md build-win32
 cd build-win32
-
+echo Proceeding for the configuration.
 @rem build pxScene
 if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
 echo 098765
