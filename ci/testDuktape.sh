@@ -16,8 +16,8 @@ if ( [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] ) ; t
 exit 0;
 fi
 
-sh $TRAVIS_BUILD_DIR/ci/duktape_install.sh
-validateExe "$?" "duktape_install.sh"
+sh $TRAVIS_BUILD_DIR/ci/cleanLogsDir.sh
+validateExe "$?" "cleanLogsDir.sh"
 
 sh $TRAVIS_BUILD_DIR/ci/script.sh
 validateExe "$?" "script.sh"
