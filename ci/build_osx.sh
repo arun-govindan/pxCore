@@ -37,6 +37,8 @@ then
   export CODE_COVERAGE=1
 fi
 
+printf "clang v ersion info\n"
+clang --version
 cd $TRAVIS_BUILD_DIR;
 mkdir -p temp
 cd  temp
