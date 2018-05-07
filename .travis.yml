@@ -36,8 +36,8 @@ script:
 - if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request"
   ]; then genhtml -o $TRAVIS_BUILD_DIR/logs/codecoverage $TRAVIS_BUILD_DIR/tracefile;
   fi
-- if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]; then mv $TRAVIS_BUILD_DIR/logs $TRAVIS_BUILD_DIR/node_logs ; fi
-- if [ "$RUN_DUKTAPE" = "OFF" ] || [ "$RUN_DUKTAPE" = "" ]; then ./ci/testDuktape.sh ; fi
+- if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]; then mv $TRAVIS_BUILD_DIR/logs $TRAVIS_BUILD_DIR/node_logs ; export RUN_DUKTAPE=OFF ; fi
+- if [ "$RUN_DUKTAPE" = "ON" ] || [ "$RUN_DUKTAPE" = "" ]; then ./ci/testDuktape.sh ; fi
 after_script:
 - "./ci/after_script.sh"
 - if [ "$TRAVIS_EVENT_TYPE" != "pull_request" ]; then  rm -rf /tmp/pxscene-build.pem;
