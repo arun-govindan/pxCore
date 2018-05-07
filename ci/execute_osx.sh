@@ -55,6 +55,8 @@ printExecLogs()
 # Start testRunner ...
 rm -rf /var/tmp/pxscene.log
 cd $TRAVIS_BUILD_DIR/examples/pxScene2d/src/pxscene.app/Contents/MacOS
+printf "clang version info"
+clang --version
 ./pxscene.sh $TESTRUNNERURL?tests=file://$TRAVIS_BUILD_DIR/tests/pxScene2d/testRunner/tests.json &
 
 # Monitor testRunner ...
