@@ -21,6 +21,8 @@ travis_retry() {
   return $result
 }
 
+export RUN_DUKTAPE="OFF"
+
 #start the monitor
 $TRAVIS_BUILD_DIR/ci/monitor.sh &
 
