@@ -46,7 +46,7 @@ then
   #brew upgrade cmake;
 printf "installing  clang to run latest"
   brew install quilt
-
+sudo /usr/sbin/DevToolsSecurity --enable
   lldb --version
   lldb --help
   cmake --version
