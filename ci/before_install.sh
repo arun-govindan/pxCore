@@ -21,7 +21,8 @@ travis_retry() {
   return $result
 }
 
-export RUN_DUKTAPE="OFF"
+#to exclude duktape, change the flag to OFF
+export RUN_DUKTAPE="ON"
 
 #start the monitor
 $TRAVIS_BUILD_DIR/ci/monitor.sh &
