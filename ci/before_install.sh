@@ -44,8 +44,14 @@ if [ "$TRAVIS_OS_NAME" = "osx" ] ;
 then
   brew update;
   #brew upgrade cmake;
+printf "installing  clang to run latest"
+clang --version
   brew install quilt
   sudo /usr/sbin/DevToolsSecurity --enable
+   brew install --with-toolchain llvm
+brew info llvm
+
+clang --version
   lldb --version
   lldb --help
   cmake --version
