@@ -14,8 +14,12 @@ copy /y curl-7.40.0\include\curl\curlbuild-win.h curl-7.40.0\include\curl\curlbu
 copy /y libpng-1.6.28\scripts\pnglibconf.h.prebuilt libpng-1.6.28\pnglibconf.h
 copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 
-echo. ----------- files in PR ------------------
-echo. git --no-pager diff --name-only FETCH_HEAD...master
+echo. ----------- files in PR APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH ------------------
+echo. git --no-pager diff --name-only FETCH_HEAD...%APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH% 
+echo.-------------files end in PR --------------
+
+echo. ----------- files in PR APPVEYOR_REPO_BRANCH ------------------
+echo. git --no-pager diff --name-only FETCH_HEAD...%APPVEYOR_REPO_BRANCH% 
 echo.-------------files end in PR --------------
 set buildExternal=0
 if NOT [%APPVEYOR_REPO_COMMIT%] == [] (
