@@ -31,6 +31,7 @@ clone_folder: "c:/dw/pxCore"
 
 # Build pipeline: https://www.appveyor.com/docs/build-configuration/
 init:
+  - set
   - echo environment setup...
   - git config --system core.longpaths true
   - ps: "ls \"C:/\""
