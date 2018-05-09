@@ -11,6 +11,9 @@
  * This work is published from: United States.
  */
 
+ 
+ 
+ 
 /* This is an example of how to use libpng to read and write PNG files.
  * The file libpng-manual.txt is much more verbose then this.  If you have not
  * read it, do so first.  This was designed to be a starting point of an
