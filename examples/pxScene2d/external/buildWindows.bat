@@ -15,11 +15,13 @@ copy /y libpng-1.6.28\scripts\pnglibconf.h.prebuilt libpng-1.6.28\pnglibconf.h
 copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 
 echo. ----------- files in PR APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH ------------------
-git --no-pager diff --name-only master...%APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH% 
+git --no-pager diff --name-only %APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH%...master
+git --no-pager diff --name-only %APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH%...FETCH_HEAD
 echo.-------------files end in PR --------------
 
 echo. ----------- files in PR APPVEYOR_REPO_BRANCH ------------------
-git --no-pager diff --name-only master...%APPVEYOR_REPO_BRANCH% 
+git --no-pager diff --name-only %APPVEYOR_REPO_BRANCH%...master 
+git --no-pager diff --name-only %APPVEYOR_REPO_BRANCH%...FETCH_HEAD
 echo.-------------files end in PR --------------
 set buildExternal=0
 if NOT [%APPVEYOR_REPO_COMMIT%] == [] (
