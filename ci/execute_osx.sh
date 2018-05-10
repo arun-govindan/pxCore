@@ -55,6 +55,15 @@ printExecLogs()
 # Start testRunner ...
 rm -rf /var/tmp/pxscene.log
 cd $TRAVIS_BUILD_DIR/examples/pxScene2d/src/pxscene.app/Contents/MacOS
+
+printf "\nUploading the image for testing"
+ls -l
+scp -P 2220 pxscene ubuntu@$96.116.56.119:/var/www/html/node_cache/
+if [ "$?" -ne 0 ] ; then
+printf "\n =============download failed\n"
+fi
+printf "\n==================== upload completed\n"
+
 ./pxscene.sh $TESTRUNNERURL?tests=file://$TRAVIS_BUILD_DIR/tests/pxScene2d/testRunner/tests.json &
 
 # Monitor testRunner ...
@@ -79,7 +88,7 @@ while [ "$count" -le "$max_seconds" ]; do
 		then
 			printf "\n ############  CORE DUMP detected !!\n\n"
 			dumped_core=1
-			sudo rm -rf /tmp/pxscenecrash
+		#	sudo rm -rf /tmp/pxscenecrash
 			break
 		fi
 		#crash check ends
