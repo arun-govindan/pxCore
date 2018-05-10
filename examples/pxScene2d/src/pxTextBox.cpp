@@ -43,6 +43,8 @@ extern "C" {
 #endif
 
 
+
+
 pxTextBox::pxTextBox(pxScene2d* s): pxText(s),
                                     mTruncation(pxConstantsTruncation::NONE),
                                     mAlignVertical(pxConstantsAlignVertical::TOP),
