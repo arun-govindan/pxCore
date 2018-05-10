@@ -15,8 +15,7 @@ copy /y libpng-1.6.28\scripts\pnglibconf.h.prebuilt libpng-1.6.28\pnglibconf.h
 copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 
 echo. ----------- files in PR APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH ------------------
- git diff-tree --no-commit-id --name-only -r %APPVEYOR_REPO_COMMIT% 
- git diff --no-commit-id --name-only -r %APPVEYOR_REPO_COMMIT% 
+ 
  git diff --name-only %APPVEYOR_REPO_COMMIT% %APPVEYOR_REPO_COMMIT%~
 echo.-------------files end in PR --------------
 
@@ -24,7 +23,7 @@ echo.-------------files end in PR --------------
 set buildExternal=0
 if NOT [%APPVEYOR_REPO_COMMIT%] == [] (
 echo. commit is not empty
-FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --no-commit-id --name-only -r %APPVEYOR_REPO_COMMIT% `) DO (
+FOR /F "tokens=* USEBACKQ" %%F IN (`git diff --name-only %APPVEYOR_REPO_COMMIT% %APPVEYOR_REPO_COMMIT%~`) DO (
  echo.%%F
  echo.%%F|findstr "zlib-1.2.11 WinSparkle pthread-2.9 libpng-1.6.28 libjpeg-turbo-1.5.1 glew-2.0.0 freetype-2.5.2 curl-7.40.0 jpeg-9a"
   if !errorlevel! == 0 (
@@ -34,6 +33,11 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`git diff-tree --no-commit-id --name-only -r 
   )
 )
 )
+
+if [%APPVEYOR_REPO_COMMIT%] == [] (
+set buildExternal=1
+)
+
 :BREAK_LOOP1
 cd vc.build
 if NOT EXIST builds (
