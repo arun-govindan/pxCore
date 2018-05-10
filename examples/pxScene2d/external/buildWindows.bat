@@ -30,6 +30,7 @@ if [%APPVEYOR_REPO_COMMIT%] == [] (
 set buildExternal=1
 )
 
+
 :BREAK_LOOP1
 cd vc.build
 if NOT EXIST builds (

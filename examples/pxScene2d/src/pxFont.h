@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ struct GlyphTextureEntry
 {
   pxTextureRef t;
   float u1, v1, u2, v2;
+  GlyphTextureEntry(): u1(0),v1(0),u2(0),v2(0){}
 };
 
 #ifdef PXSCENE_FONT_ATLAS
@@ -311,7 +312,6 @@ private:
 // Weak Map
 typedef std::map<uint32_t, pxFont*> FontMap;
 typedef std::map<rtString, uint32_t> FontIdMap;
-static rtMutex mFontMgrMutex;
 class pxFontManager
 {
   

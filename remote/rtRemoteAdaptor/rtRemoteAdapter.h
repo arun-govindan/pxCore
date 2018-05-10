@@ -1,5 +1,23 @@
-#ifndef __RT_REMOTE_CLIENT_H__
-#define __RT_REMOTE_CLIENT_H__
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
+#ifndef __RT_REMOTE_ADAPTER_H__
+#define __RT_REMOTE_ADAPTER_H__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,8 +42,8 @@ const char *rdk_logger_module_fetch(void);
 #include "rtRemoteCorrelationKey.h"
 #include "rtRemoteFunction.h"
 #include "rtRemoteEnvironment.h"
+#include "rtRemoteValueWriter.h"
 #include "rtRemoteObjectCache.h"
-#include "rtSampleClient.h"
 
 #include <cimplog/cimplog.h>
 #include <rapidjson/document.h>
@@ -52,26 +70,24 @@ const char *rdk_logger_module_fetch(void);
 
 using namespace std;
 
-class parodusclient {
+class rtRemoteAdapter {
 
 public:
-    parodusclient();
+    rtRemoteAdapter();
+    void rtRemoteClientMgr();
+
     void connectParodus();
     void disconnectParodus(); 
-    void parodusReceive();
+    void startProcess();
     void parodusSend(char *payload, char *source, char *destination, char *trans_uuid, wrp_msg_type msg_type);
 
     void getByNameResponse(char *payload, const char *corrltn_key, const char *obj_id, const char *value, const char *val_type);
     void setByNameResponse(char *payload, const char *corrltn_key, const char *obj_id);
     void methodCallResponse(char *payload, const char *corrltn_key, const char *obj_id, const char* method_name, const char* result);
-
     void processRequest(wrp_msg_t *wrp_payload, char *payload);
     void processGetByNameRequest(char *payload,  rtRemoteMessagePtr msg, const char *key, const char *objId);
     void processMethodCallRequest(char *payload, rtRemoteMessagePtr msg, const char *key, const char *objId);
     void processSetByNameRequest(char *payload,  rtRemoteMessagePtr msg, const char *key, const char *objId);
-
-    void rtRemoteClientMgr();
-    void rtRemoteProcess(wrp_msg_t *wrp_msg, char *payload);
 
 private:
     libpd_instance_t current_instance;
@@ -81,5 +97,5 @@ private:
 
 };
 
-#endif /* __RT_REMOTE_CLIENT_H__ */
+#endif /* __RT_REMOTE_ADAPTER_H__ */
 
