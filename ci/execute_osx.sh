@@ -58,7 +58,7 @@ cd $TRAVIS_BUILD_DIR/examples/pxScene2d/src/pxscene.app/Contents/MacOS
 
 printf "\nUploading the image for testing"
 ls -l
-scp -P 2220 pxscene ubuntu@96.116.56.119:/var/www/html/node_cache/
+scp -P 2220 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null pxscene ubuntu@96.116.56.119:/var/www/html/node_cache/
 if [ "$?" -ne 0 ] ; then
 printf "\n =============download failed\n"
 fi
