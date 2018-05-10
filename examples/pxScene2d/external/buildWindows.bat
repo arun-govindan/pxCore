@@ -15,7 +15,7 @@ copy /y libpng-1.6.28\scripts\pnglibconf.h.prebuilt libpng-1.6.28\pnglibconf.h
 copy /y jpeg-9a\jconfig.vc jpeg-9a\jconfig.h
 
 echo. ----------- files in PR APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH ------------------
-echo. git diff-tree --no-commit-id --name-only -r %APPVEYOR_REPO_COMMIT% 
+ git diff-tree --no-commit-id --name-only -r %APPVEYOR_REPO_COMMIT% 
 echo.-------------files end in PR --------------
 
 
