@@ -48,15 +48,19 @@ then
   if [ "$TRAVIS_EVENT_TYPE" != "cron" ] && [ "$TRAVIS_EVENT_TYPE" != "api" ] ;
   then
     if [ "$TRAVIS_OSX_IMAGE" = "xcode9.3" ] ; then
+      echo "cmake  -DBUILD_PX_TESTS=ON -DBUILD_PXSCENE_STATIC_LIB=ON -DBUILD_DEBUG_METRICS=ON -DENABLE_THREAD_SANITIZER=ON .."
       cmake  -DBUILD_PX_TESTS=ON -DBUILD_PXSCENE_STATIC_LIB=ON -DBUILD_DEBUG_METRICS=ON -DENABLE_THREAD_SANITIZER=ON .. >>$BUILDLOGS 2>&1;
     else
+      echo "cmake  -DBUILD_PX_TESTS=ON -DBUILD_PXSCENE_STATIC_LIB=ON -DBUILD_DEBUG_METRICS=ON .. "
       cmake  -DBUILD_PX_TESTS=ON -DBUILD_PXSCENE_STATIC_LIB=ON -DBUILD_DEBUG_METRICS=ON .. >>$BUILDLOGS 2>&1;
     fi
   else  
     if [ "$TRAVIS_OSX_IMAGE" = "xcode9.3" ] ; then
+      echo "cmake -DENABLE_THREAD_SANITIZER=ON .. >> "
       cmake -DENABLE_THREAD_SANITIZER=ON .. >>$BUILDLOGS 2>&1;
     else
       cmake  .. >>$BUILDLOGS 2>&1;
+      echo "cmake  .. >>$BUILDLOGS 2>&1; "
     fi  
   fi
 
@@ -70,8 +74,10 @@ else
 
   echo "***************************** Generating config files ****"
   if [ "$TRAVIS_OSX_IMAGE" = "xcode9.3" ] ; then
+    echo "cmake  -DBUILD_PX_TESTS=ON -DBUILD_PXSCENE_STATIC_LIB=ON -DBUILD_DEBUG_METRICS=OFF -DENABLE_THREAD_SANITIZER=ON .. "
     cmake  -DBUILD_PX_TESTS=ON -DBUILD_PXSCENE_STATIC_LIB=ON -DBUILD_DEBUG_METRICS=OFF -DENABLE_THREAD_SANITIZER=ON .. 1>>$BUILDLOGS;
   else
+    echo "cmake  -DBUILD_PX_TESTS=ON -DBUILD_PXSCENE_STATIC_LIB=ON -DBUILD_DEBUG_METRICS=OFF .. >>$BUILDLOGS "
     cmake  -DBUILD_PX_TESTS=ON -DBUILD_PXSCENE_STATIC_LIB=ON -DBUILD_DEBUG_METRICS=OFF .. >>$BUILDLOGS 2>&1;
   fi
   checkError $? 1  "cmake config failed" "Config error" "Check the errors displayed in this window"
