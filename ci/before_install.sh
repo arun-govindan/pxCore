@@ -23,7 +23,7 @@ travis_retry() {
 
 #start the monitor
 $TRAVIS_BUILD_DIR/ci/monitor.sh &
-
+printf "\n!*!*!*!*!*!* value of xcode version : "$TRAVIS_OSX_IMAGE"\n"
 if [ "$TRAVIS_OS_NAME" = "linux" ]
 then
     if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ]

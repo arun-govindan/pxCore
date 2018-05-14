@@ -5,14 +5,11 @@ matrix:
     sudo: required
   - os: osx
     osx_image: xcode9.3
-    env:  SPARK_RELEASE="YES"	
     osx_image: xcode6.4
-    env: SPARK_RELEASE="NO"
 language: c++
 before_install:
-- "echo value of SPARK_RELEASE : $SPARK_RELEASE"
-- if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ SPARK_RELEASE = "NO" ] ; then exit 0 ; fi 
-- if ( [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] ) && [ SPARK_RELEASE = "YES" ] ; then exit 0 ; fi 
+- if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_OSX_IMAGE" = "xcode6.4" ] ; then exit 0 ; fi 
+- if ( [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] ) && [ "$TRAVIS_OSX_IMAGE" = "xcode9.3" ] ; then exit 0 ; fi 
 - if [ "$TRAVIS_EVENT_TYPE" != "pull_request" ]; then openssl aes-256-cbc -K $encrypted_a739ef9a19a4_key
   -iv $encrypted_a739ef9a19a4_iv -in pxscene-build.pem.enc -out /tmp/pxscene-build.pem
   -d; fi
