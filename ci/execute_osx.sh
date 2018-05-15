@@ -91,6 +91,10 @@ done #LOOP
 # Handle crash - 'dumped_core = 1' ?
 if [ "$dumped_core" -eq 1 ]
 	then
+        printf "\n********************* process id list *********************\n"
+        echo ps -ef | grep pxscene |grep -v grep|grep -v pxscene.sh|awk '{print $2}'
+        echo ps -ef | grep /bin/sh |grep -v grep||awk '{print $2}'
+        printf "\n***********************************************************\n"
 	$TRAVIS_BUILD_DIR/ci/check_dump_cores_osx.sh `pwd` `ps -ef | grep pxscene |grep -v grep|grep -v pxscene.sh|awk '{print $2}'` /var/tmp/pxscene.log
 	checkError $cored "Execution failed" "Core dump" "Run execution locally"
 fi

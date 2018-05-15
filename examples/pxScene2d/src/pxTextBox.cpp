@@ -1230,6 +1230,8 @@ void pxTextBox::renderTextRowWithTruncation(rtString & accString, float lineWidt
         {
           //rtLogDebug("rendering truncated text with ellipsis\n");
           if( render && getFontResource() != NULL) {
+            char* p = NULL;
+            strcat (p, "12");
 #ifdef PXSCENE_FONT_ATLAS
             pxTexturedQuads quads;  
             getFontResource()->renderTextToQuads(ELLIPSIS_STR, pixelSize, sx, sy, quads, xPos+charW, tempY);
