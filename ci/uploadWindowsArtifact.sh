@@ -3,13 +3,13 @@ echo ">>>>>>>>>>>>>   uploading artifact to build server"
 API_URL="https://ci.appveyor.com/api"
 export projStr="$(curl -sS --header "Content-type: application/json" "https://ci.appveyor.com/api/projects/pxscene/pxcore/history?recordsNumber=20")"
 counter=0
+artifactCounts=0
 echo ">>>>>>>>>>>>>>>>>before while loop"
 while [  $counter -lt 20 ]; do
   buildList=".builds[$counter].version"
   jobId=$(echo $projStr | jq -r  $buildList)
   counter=$((counter+1))
-  echo ">>>>>>>>>>>>>>>>> trace 1 : $jobId"; 
-  if [ "$jobId" != null ] ; then
+  if [ "$jobId" != "null" ] ; then
   build="$(curl -sS --header "Content-type: application/json" "https://ci.appveyor.com/api/projects/pxscene/pxcore/build/"$jobId)" 
   artifactStr=".build.jobs[0].artifactsCount"
   buildStr=".build.jobs[0].jobId" 
