@@ -46,6 +46,7 @@ then
   then
     ./ci/release_osx.sh 96.116.56.119 release.tgz 
     checkError $? "unable to send artifacts to 96.116.56.119" "96.116.56.119 down?" "Retry"
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>> calling uploadWindowsArtifact.sh"
     ./ci/uploadWindowsArtifact.sh
     checkError $? "Windows artifact upload failed" "Please check the logs" "Run uploadWindowsArtifact.sh locally to verify."
   fi
