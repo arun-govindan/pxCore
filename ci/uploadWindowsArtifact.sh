@@ -1,13 +1,14 @@
-#!/bin/bash
-
-
+#!/bin/sh
+echo ">>>>>>>>>>>>>uploading artifact to build server"
 API_URL="https://ci.appveyor.com/api"
 export projStr="$(curl -sS --header "Content-type: application/json" "https://ci.appveyor.com/api/projects/pxscene/pxcore/history?recordsNumber=20")"
 counter=0
+echo ">>>>>>>>>>>>>>>>>before while loop"
 while [  $counter -lt 20 ]; do
   buildList=".builds[$counter].version"
   jobId=$(echo $projStr | jq -r  $buildList)
-  let counter=counter+1 
+  counter=$((counter+60))
+  echo ">>>>>>>>>>>>>>>>> trace 1"; 
   if [ "$jobId" != null ] ; then
   build="$(curl -sS --header "Content-type: application/json" "https://ci.appveyor.com/api/projects/pxscene/pxcore/build/"$jobId)" 
   artifactStr=".build.jobs[0].artifactsCount"
@@ -31,3 +32,7 @@ REMOTE_HOST="96.116.56.119"
 REMOTE_DIR="/var/www/html/edge/windows"
 
 scp -P 2220 ${filename} ${DEPLOY_USER}@${REMOTE_HOST}:${REMOTE_DIR}
+
+if [ "$?" -ne 0 ] ; then
+  echo ">>>>>>>>>>>>>>> failed to upload the artifact."
+fi

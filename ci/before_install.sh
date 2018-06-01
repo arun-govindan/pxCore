@@ -63,6 +63,10 @@ then
     brew install ccache
     ls -al $HOME/.ccache
   fi
+  if [ "$TRAVIS_EVENT_TYPE" = "push" ]
+  then
+    brew install jq
+  fi
 fi
 
 #setup lighttpd server
