@@ -66,6 +66,7 @@ then
   if [ "$TRAVIS_EVENT_TYPE" = "cron" ]
   then
     brew install jq
+    brew install wget
   fi
 fi
 

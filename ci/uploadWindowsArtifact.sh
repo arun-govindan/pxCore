@@ -4,7 +4,8 @@ API_URL="https://ci.appveyor.com/api"
 export projStr="$(curl -sS --header "Content-type: application/json" "https://ci.appveyor.com/api/projects/pxscene/pxcore/history?recordsNumber=20")"
 counter=0
 artifactCounts=0
-echo ">>>>>>>>>>>>>>>>>before while loop"
+rm -f pxscene-setup.exe*
+echo ">>>>>>>>>>>>>>>>>projStr : " $projStr
 while [  $counter -lt 20 ]; do
   buildList=".builds[$counter].version"
   jobId=$(echo $projStr | jq -r  $buildList)
