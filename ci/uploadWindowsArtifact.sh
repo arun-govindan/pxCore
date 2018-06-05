@@ -2,12 +2,16 @@
 
 
 API_URL="https://ci.appveyor.com/api"
-export projStr="$(curl -sS --header "Content-type: application/json" "https://ci.appveyor.com/api/projects/pxscene/pxcore/history?recordsNumber=20")"
 counter=0
+jobNum=0
+jobNum=`echo "$(curl -sS --header "Content-type: application/json" "https://ci.appveyor.com//api/projects/pxscene/pxcore" | jq -r ".build.buildNumber")"` 
+echo $jobNum
+jobId=0dev.$jobNum
 while [  $counter -lt 20 ]; do
   buildList=".builds[$counter].version"
-  jobId=$(echo $projStr | jq -r  $buildList)
-  let counter=counter+1 
+  jobId=0dev.$jobNum
+  let counter=counter+1
+  let jobNum=jobNum-1 
   if [ "$jobId" != null ] ; then
   build="$(curl -sS --header "Content-type: application/json" "https://ci.appveyor.com/api/projects/pxscene/pxcore/build/"$jobId)" 
   artifactStr=".build.jobs[0].artifactsCount"
@@ -16,7 +20,7 @@ while [  $counter -lt 20 ]; do
   buildVer=$(echo $build | jq -r  $buildStr)
     if [ $artifactCounts -gt 0 ] ; then
     downloadArtifact="wget -q https://ci.appveyor.com/api/buildjobs/"$buildVer"/artifacts/pxscene-setup.exe"
-    echo "Artifact count : $artifactCounts, Build version :  $buildVer, JobId : $(echo $build | jq -r .build.jobs[0].buildNumber)"
+    echo "Artifact count : $artifactCounts, Build version :  $buildVer, JobId : $jobId)"
     $downloadArtifact
     #DOWNLOAD_ARTIFACT="$(curl -sS --header "Content-type: application/json" "https://ci.appveyor.com/api/buildjobs/"$buildVer"/artifacts/pxscene-setup.exe")" 
     echo "::::wget -q https://ci.appveyor.com/api/buildjobs/"$buildVer"/artifacts/pxscene-setup.exe :::: " $downloadArtifact
