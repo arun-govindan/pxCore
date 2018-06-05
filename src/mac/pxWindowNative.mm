@@ -121,6 +121,18 @@ pxWindowNative::~pxWindowNative()
   return nil;
 }
 
+- (void)windowDidEnterFullScreen:(NSNotification *)notification
+{
+  NSSize s = [[[notification object] contentView] frame].size;
+  pxWindowNative::_helper_onSize(mWindow, s.width, s.height);  
+}
+
+- (void)windowDidExitFullScreen:(NSNotification *)notification
+{
+  NSSize s = [[[notification object] contentView] frame].size;
+  pxWindowNative::_helper_onSize(mWindow, s.width, s.height);
+}
+
 - (void)windowDidResize: (NSNotification*)notification
 {
   NSSize s = [[[notification object] contentView] frame].size;
@@ -533,19 +545,26 @@ void MyDisplayReconfigurationCallBack(CGDirectDisplayID display,
 
 #pragma mark - Cut and Paste Frist Responders
 
+
+
+- (IBAction)toggleAddressBar:sender
+{
+  pxWindowNative::_helper_onKeyDown(mWindow, PX_KEY_F, PX_MOD_CONTROL | PX_MOD_ALT);  // Fake a CTRL-ALT-F
+}
+
 - (IBAction)cut:sender
 {
-    pxWindowNative::_helper_onKeyDown(mWindow, 88, 16);  // Fake a CTRL-X
+  pxWindowNative::_helper_onKeyDown(mWindow, PX_KEY_X, PX_MOD_CONTROL);  // Fake a CTRL-X
 }
 
 - (IBAction)copy:sender
 {
-    pxWindowNative::_helper_onKeyDown(mWindow, 67, 16);  // Fake a CTRL-C
+    pxWindowNative::_helper_onKeyDown(mWindow, PX_KEY_C, PX_MOD_CONTROL);  // Fake a CTRL-C
 }
 
 - (IBAction)paste:sender
 {
-    pxWindowNative::_helper_onKeyDown(mWindow, 86, 16);  // Fake a CTRL-V
+    pxWindowNative::_helper_onKeyDown(mWindow, PX_KEY_V, PX_MOD_CONTROL);  // Fake a CTRL-V
 }
 
 #pragma mark - Mouse Operations
@@ -814,44 +833,50 @@ void MyDisplayReconfigurationCallBack(CGDirectDisplayID display,
      --------------------------------------------------------*/
     if ( [sender draggingSource] != self )
     {
-        NSURL      *fileURL = [NSURL URLFromPasteboard: [sender draggingPasteboard]];
+      pxClipboardNative *clip = pxClipboardNative::instance();
       
-        if(fileURL)
-        {
-          // Handle Drag'n'Dropped >> FILE
-          //
+      if(clip == nil)
+      {
+        NSLog(@"ERROR: performDragOperation() - Failed to get Clipboard instance");
+        return NO;
+      }
+
+      NSURL *fileURL = [NSURL URLFromPasteboard: [sender draggingPasteboard]];
+
+      if(fileURL)
+      {
+        // Handle Drag'n'Dropped >> FILE
+        //
         NSString  *filePath = [fileURL path];
         NSString  *dropURL  = [NSString stringWithFormat:@"file://%@", filePath ];
-        
-          pxClipboardNative *clip = pxClipboardNative::instance();
-          
-      if(clip && dropURL)
-      {
-          clip->setString("TEXT", [dropURL UTF8String]);
+
+        if(dropURL)
+        {
+            clip->setString("TEXT", [dropURL UTF8String]);
+
+            pxWindowNative::_helper_onKeyDown(mWindow, 65, 16);  // Fake a CTRL-A ... select ALL to replace current URL
+        }
       }
-    }
       else
       {
-          // Handle Drag'n'Dropped >> TEXT
-          //
-          NSString *text = [[sender draggingPasteboard] stringForType:NSPasteboardTypeString];
-        
-        pxClipboardNative *clip = pxClipboardNative::instance();
-        
-      if(clip && text)
-      {
-          clip->setString("TEXT", [text UTF8String]);
+        // Handle Drag'n'Dropped >> TEXT
+        //
+        NSString *text = [[sender draggingPasteboard] stringForType:NSPasteboardTypeString];
+
+        if(text)
+        {
+            clip->setString("TEXT", [text UTF8String]);
+        }
       }
-      }
-        
-        pxWindowNative::_helper_onKeyDown(mWindow, 86, 16);  // Fake a CTRL-V
-        
-        // Steal App Focus - become active App...
-        [[NSRunningApplication currentApplication] activateWithOptions:(NSApplicationActivateAllWindows | NSApplicationActivateIgnoringOtherApps)];
-        
-        return YES;
+
+      pxWindowNative::_helper_onKeyDown(mWindow, 86, 16);  // Fake a CTRL-V
+
+      // Steal App Focus - become active App...
+      [[NSRunningApplication currentApplication] activateWithOptions:(NSApplicationActivateAllWindows | NSApplicationActivateIgnoringOtherApps)];
+
+      return YES;
     }
-    
+
     return NO;
 }
 
@@ -1077,6 +1102,17 @@ pxError pxWindow::init(int left, int top, int width, int height)
                                                  styleMask: NSTitledWindowMask | NSClosableWindowMask |NSMiniaturizableWindowMask | NSResizableWindowMask
                                                    backing: NSBackingStoreBuffered
                                                      defer: NO];
+  
+  
+  NSApplication *app = [NSApplication sharedApplication];
+  
+  NSApplicationPresentationOptions options = [app currentSystemPresentationOptions];
+  [app setPresentationOptions: options | NSApplicationPresentationFullScreen];
+
+  NSWindowCollectionBehavior behavior = [window collectionBehavior];
+  [window setCollectionBehavior: behavior | NSWindowCollectionBehaviorFullScreenPrimary ];
+  
+  
   mWindow = (void*)window;
   
   WinDelegate* delegate = [[WinDelegate alloc] initWithPXWindow:this];
