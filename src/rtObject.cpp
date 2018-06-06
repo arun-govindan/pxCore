@@ -125,7 +125,6 @@ rtError rtEmit::delListener(const char* eventName, rtIFunction* f)
 
 rtError rtEmit::Send(int numArgs, const rtValue* args, rtValue* result) 
 {
-  (void)result;
   if (numArgs > 0)
   {
     rtString eventName = args[0].toString();
@@ -203,12 +202,18 @@ rtError rtEmit::Send(int numArgs, const rtValue* args, rtValue* result)
     }
     mPendingEntriesToAdd.clear();
   }
+if (result){
+         delete result;
+         result = NULL;
+  }
   return RT_OK;
 }
         
 // rtEmitRef
 rtError rtEmitRef::Send(int numArgs,const rtValue* args,rtValue* result) 
 {
+if (result == NULL)
+               result = new rtValue();
   return (*this)->Send(numArgs, args, result);
 }
 
