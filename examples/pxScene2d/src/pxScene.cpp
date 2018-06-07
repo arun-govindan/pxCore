@@ -1,6 +1,6 @@
 ﻿/*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 #include "rtScript.h"
 
 #include "pxUtil.h"
+#include "rtSettings.h"
 
 #ifdef RUNINMAIN
 extern rtScript script;
@@ -75,13 +76,9 @@ using namespace std;
 #include <client/windows/handler/exception_handler.h>
 #endif
 
-#ifdef PX_SERVICE_MANAGER
-#include "smqtrtshim.h"
+#ifdef PX_SERVICE_MANAGER_LINKED
 #include "rtservicemanager.h"
-#include "service.h"
-#include "servicemanager.h"
-#include "applicationmanagerservice.h"
-#endif //PX_SERVICE_MANAGER
+#endif //PX_SERVICE_MANAGER_LINKED
 
 #ifndef RUNINMAIN
 class AsyncScriptInfo;
@@ -89,7 +86,10 @@ vector<AsyncScriptInfo*> scriptsInfo;
 static uv_work_t nodeLoopReq;
 #endif
 
+#include "rtThreadPool.h"
+
 #include <stdlib.h>
+#include <fstream>
 
 pxEventLoop  eventLoop;
 pxEventLoop* gLoop = &eventLoop;
@@ -104,6 +104,13 @@ char** g_origArgv = NULL;
 bool gDumpMemUsage = false;
 extern bool gApplicationIsClosing;
 extern int pxObjectCount;
+
+#include "pxFont.h"
+
+#ifdef PXSCENE_FONT_ATLAS
+extern pxFontAtlas gFontAtlas;
+#endif
+
 #ifdef HAS_LINUX_BREAKPAD
 static bool dumpCallback(const google_breakpad::MinidumpDescriptor& descriptor,
 void* context, bool succeeded) {
@@ -125,6 +132,11 @@ bool dumpCallback(const wchar_t* dump_path,
 #ifdef ENABLE_CODE_COVERAGE
 extern "C" void __gcov_flush();
 #endif
+
+#ifdef ENABLE_OPTIMUS_SUPPORT
+#include "optimus_client.h"
+#endif //ENABLE_OPTIMUS_SUPPORT
+
 class sceneWindow : public pxWindow, public pxIViewContainer
 {
 public:
@@ -181,6 +193,11 @@ public:
 #endif
   }
 
+  void* getInterface(const char* /*name*/)
+  {
+     return NULL;
+  }
+  
   rtError setView(pxIView* v)
   {
     mView = v;
@@ -237,6 +254,7 @@ protected:
       gApplicationIsClosing = true;
     
     rtLogInfo(__FUNCTION__);
+    
     ENTERSCENELOCK();
     if (mView)
       mView->onCloseRequest();
@@ -249,9 +267,7 @@ protected:
 #endif
    // pxScene.cpp:104:12: warning: deleting object of abstract class type ‘pxIView’ which has non-virtual destructor will cause undefined behaviour [-Wdelete-non-virtual-dtor]
 
-  #ifdef RUNINMAIN
-     script.collectGarbage();
-  #endif
+
   ENTERSCENELOCK()
     mView = NULL;
   EXITSCENELOCK()
@@ -262,7 +278,12 @@ protected:
     free(g_origArgv);
   #endif
 
+    pxFontManager::clearAllFonts();
+    
     context.term();
+#ifdef RUNINMAIN
+    script.pump();
+#endif
     script.collectGarbage();
 
     if (gDumpMemUsage)
@@ -271,6 +292,7 @@ protected:
 #ifndef PX_PLATFORM_DFB_NON_X11
       rtLogInfo("texture memory usage is [%" PRId64 "]",context.currentTextureMemoryUsageInBytes());
 #endif
+      fflush(stdout);
 // #ifdef PX_PLATFORM_MAC
 //       rtLogInfo("texture memory usage is [%lld]",context.currentTextureMemoryUsageInBytes());
 // #else
@@ -364,6 +386,9 @@ protected:
     if (mView)
       mView->onUpdate(pxSeconds());
     EXITSCENELOCK()
+#ifdef ENABLE_OPTIMUS_SUPPORT
+    OptimusClient::pumpRemoteObjectQueue();
+#endif //ENABLE_OPTIMUS_SUPPORT
 #ifdef RUNINMAIN
     script.pump();
 #endif
@@ -448,13 +473,36 @@ int pxMain(int argc, char* argv[])
   uv_async_init(nodeLoop, &gcTrigger,collectGarbage);
 
 #endif
+
+  rtString settingsPath;
+  if (RT_OK == rtGetHomeDirectory(settingsPath))
+  {
+    settingsPath.append(".sparkSettings.json");
+    if (rtFileExists(settingsPath))
+      rtSettings::instance()->loadFromFile(settingsPath);
+  }
+
+  // overwrite file settings with settings from the command line
+  rtSettings::instance()->loadFromArgs(argc, argv);
+
 char const* s = getenv("PX_DUMP_MEMUSAGE");
 if (s && (strcmp(s,"1") == 0))
 {
   gDumpMemUsage = true;
 }
+
+  const char* url = "browser.js";
+  for (int i=1;i<argc;i++)
+  {
+    const char* arg = argv[i];
+    if (arg && arg[0] != '-')
+    {
+      url = arg;
+      break;
+    }
+  }
+
 #ifdef ENABLE_DEBUG_MODE
-  int urlIndex  = -1;
 #ifdef RTSCRIPT_SUPPORT_NODE
   bool isDebugging = false;
 
@@ -470,13 +518,6 @@ if (s && (strcmp(s,"1") == 0))
         isDebugging = true;
       }
       size += strlen(argv[i])+1;
-    }
-    else
-    {
-      if (strstr(argv[i],".js"))
-      {
-        urlIndex = i;
-      }
     }
   }
   if (isDebugging == true)
@@ -502,7 +543,7 @@ if (s && (strcmp(s,"1") == 0))
         strcpy(nodeInput+curpos,argv[i]);
         *(nodeInput+curpos+strlen(argv[i])) = '\0';
         g_argv[g_argc++] = &nodeInput[curpos];
-        curpos = curpos + strlen(argv[i]) + 1;
+        curpos = curpos + (int) strlen(argv[i]) + 1;
     }
   }
   if (false == isDebugging)
@@ -526,17 +567,35 @@ if (s && (strcmp(s,"1") == 0))
   int32_t windowWidth = rtGetEnvAsValue("PXSCENE_WINDOW_WIDTH","1280").toInt32();
   int32_t windowHeight = rtGetEnvAsValue("PXSCENE_WINDOW_HEIGHT","720").toInt32();
 
+  rtValue screenWidth, screenHeight;
+  if (RT_OK == rtSettings::instance()->value("screenWidth", screenWidth))
+    windowWidth = screenWidth.toInt32();
+  if (RT_OK == rtSettings::instance()->value("screenHeight", screenHeight))
+    windowHeight = screenHeight.toInt32();
+
   // OSX likes to pass us some weird parameter on first launch after internet install
   rtLogInfo("window width = %d height = %d", windowWidth, windowHeight);
-#ifdef ENABLE_DEBUG_MODE
-  win.init(10, 10, windowWidth, windowHeight, (urlIndex != -1)?argv[urlIndex]:"browser.js");
-#else
-  win.init(10, 10, windowWidth, windowHeight, (argc >= 2 && argv[1][0] != '-')?argv[1]:"browser.js");
-#endif
+  win.init(10, 10, windowWidth, windowHeight, url);
   win.setTitle(buffer);
   // JRJR TODO Why aren't these necessary for glut... pxCore bug
   win.setVisibility(true);
-  win.setAnimationFPS(60);
+
+  uint32_t animationFPS = 60;
+  rtString f;
+  if (RT_OK == rtGetHomeDirectory(f))
+  {
+    f.append(".sparkFps");
+    if (rtFileExists(f))
+    {
+      std::fstream fs(f.cString(), std::fstream::in);
+      uint32_t val = 0;
+      fs >> val;
+      if (val > 0)
+        animationFPS = val;
+    }
+  }
+  rtLogInfo("Animation FPS: %lu", (unsigned long) animationFPS);
+  win.setAnimationFPS(animationFPS);
 
 #ifdef WIN32
 
@@ -606,14 +665,15 @@ if (s && (strcmp(s,"1") == 0))
 
 #endif
 
-#ifdef PX_SERVICE_MANAGER
-  SMQtRtShim::installDefaultCallback();
+#ifdef ENABLE_OPTIMUS_SUPPORT
+  rtObjectRef tempObject;
+  OptimusClient::registerApi(tempObject);
+#endif //ENABLE_OPTIMUS_SUPPORT
+
+#ifdef PX_SERVICE_MANAGER_LINKED
   RtServiceManager::start();
 
-  ServiceStruct serviceStruct = { ApplicationManagerService::SERVICE_NAME, createApplicationManagerService };
-  ServiceManager::getInstance()->registerService(ApplicationManagerService::SERVICE_NAME, serviceStruct);
-
-#endif //PX_SERVICE_MANAGER
+#endif //PX_SERVICE_MANAGER_LINKED
 
   eventLoop.run();
 
