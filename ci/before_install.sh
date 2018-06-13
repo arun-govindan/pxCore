@@ -35,7 +35,8 @@ fi
 
 #install necessary basic packages for linux and mac 
 if [ "$TRAVIS_OS_NAME" = "linux" ] ; 
-then 
+then
+  printenv 
   travis_retry sudo apt-get update
   travis_retry sudo apt-get install git libglew-dev freeglut3 freeglut3-dev libgcrypt11-dev zlib1g-dev g++ libssl-dev nasm autoconf valgrind libyaml-dev lcov cmake gdb quilt
 fi
