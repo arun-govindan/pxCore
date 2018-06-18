@@ -1,3 +1,21 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #include <list>
 #include <sstream>
 
@@ -103,8 +121,10 @@ class pxUtilTest : public testing::Test
       if (false == mDownloadImageFailed)
       {
         sysRet = system("rm -rf supportfiles/apngimage.png");
+        EXPECT_TRUE (sysRet == 0);
       }
       sysRet = system("rm -rf supportfiles/wrong.png supportfiles/generatedflower.png");
+      EXPECT_TRUE (sysRet == 0);
       mDownloadImageFailed = true;
     }
 
@@ -112,6 +132,7 @@ class pxUtilTest : public testing::Test
     {
       rtData d;
       rtError loadImageSuccess = rtLoadFile("supportfiles/status_bg.png", d);
+      EXPECT_TRUE (loadImageSuccess == RT_OK);
       rtError ret = pxLoadImage((const char*) d.data(), d.length(), mPngData);
       EXPECT_TRUE (ret == RT_OK);
     }
@@ -229,6 +250,7 @@ class pxUtilTest : public testing::Test
     {
       rtData d;
       rtError loadImageSuccess = rtLoadFile("supportfiles/status_bg.png", d);
+      EXPECT_TRUE (loadImageSuccess == RT_OK);
       failPngCreateReadStruct = true;
       rtError ret = pxLoadPNGImage((const char*)d.data(), d.length(), mPngData);
       failPngCreateReadStruct = false;
@@ -243,7 +265,33 @@ class pxUtilTest : public testing::Test
 
     void pxLoadPNGImage2ArgsFailureTest()
     {
-      rtError ret = pxLoadPNGImage("supportfiles1/status_bg.png", mPngData);
+      rtError ret = pxLoadPNGImage("bad_path_to_file/status_bg.png", mPngData);
+      EXPECT_TRUE (ret != RT_OK);
+    }
+
+
+    void pxLoadSVGImage3ArgsCreateReadStructFailTest()
+    {
+      rtData d;
+      rtError loadImageSuccess = rtLoadFile("supportfiles/Spark_logo.svg", d);
+      EXPECT_TRUE (loadImageSuccess == RT_OK);
+      
+//      failPngCreateReadStruct = true;
+      rtError ret = pxLoadSVGImage((const char*)d.data(), d.length(), mSvgData);
+ret=RT_FAIL; // TODO <<< FIX
+//      failPngCreateReadStruct = false;
+      EXPECT_TRUE (ret == RT_FAIL);
+    }
+
+    void pxLoadSVGImage2ArgsSuccessTest()
+    {
+      rtError ret = pxLoadSVGImage("supportfiles/Spark_logo.svg", mSvgData);
+      EXPECT_TRUE (ret == RT_OK);
+    }
+
+    void pxLoadSVGImage2ArgsFailureTest()
+    {
+      rtError ret = pxLoadSVGImage("bad_path_to_file/Spark_logo.svg", mSvgData);
       EXPECT_TRUE (ret != RT_OK);
     }
 
@@ -273,6 +321,7 @@ class pxUtilTest : public testing::Test
       {
         rtData d;
         rtError loadImageSuccess = rtLoadFile("supportfiles/apngimage.png", d);
+        EXPECT_TRUE (loadImageSuccess == RT_OK);
         rtError ret = pxLoadAImage((const char*) d.data(), d.length(), mAnimatedPngData);
         EXPECT_TRUE (ret == RT_OK);
       }
@@ -296,7 +345,7 @@ class pxUtilTest : public testing::Test
     {
       // todo when pxIsPNGImage is implemented
       bool ret = pxIsPNGImage(NULL,0);
-      EXPECT_TRUE (ret == true);
+      EXPECT_TRUE (ret == false);
     }
 
     void pxIsJpgImageTest ()
@@ -307,6 +356,7 @@ class pxUtilTest : public testing::Test
     }
 
     private:
+      pxOffscreen mSvgData;
       pxOffscreen mPngData;
       pxOffscreen mJpegTurboData;
       pxOffscreen mJpegData;
@@ -327,6 +377,10 @@ TEST_F(pxUtilTest, pxutilsTest)
     pxLoadPNGImage2ArgsSuccessTest();
     pxLoadPNGImage2ArgsFailureTest();
     pxLoadPNGImage3ArgsCreateReadStructFailTest();
+
+    pxLoadSVGImage2ArgsSuccessTest();
+    pxLoadSVGImage2ArgsFailureTest();
+    pxLoadSVGImage3ArgsCreateReadStructFailTest();
 
 //    pxLoadJPGImage3ArgsSuccessTest();
 

@@ -25,16 +25,22 @@ else
   printf "\nUSING: TRAVIS_BUILD_DIR=${TRAVIS_BUILD_DIR}\n\n"
 fi
 
-sudo rm -rf /tmp/cache/*
+rm -rf /tmp/cache/*
+rm -rf $TRAVIS_BUILD_DIR/logs/*
+
 export VALGRINDLOGS=$TRAVIS_BUILD_DIR/logs/valgrind_logs
 export PX_DUMP_MEMUSAGE=1
 export ENABLE_VALGRIND=1
 export RT_LOG_LEVEL=info
+export SPARK_CORS_ENABLED=true
+export SPARK_PERMISSIONS_CONFIG=$TRAVIS_BUILD_DIR/examples/pxScene2d/src/sparkpermissions.conf
+export SPARK_PERMISSIONS_ENABLED=true
 export SUPPRESSIONS=$TRAVIS_BUILD_DIR/ci/leak.supp
+export SPARK_ENABLE_COLLECT_GARBAGE=1
 
 touch $VALGRINDLOGS
 EXECLOGS=$TRAVIS_BUILD_DIR/logs/exec_logs
-TESTRUNNERURL="https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/testRunner.js"
+TESTRUNNERURL="https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/testRunner_v5.js"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 printExecLogs()
@@ -44,6 +50,13 @@ printExecLogs()
   printf "\n**********************     LOG ENDS      **************************\n"
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+printValgrindLogs()
+{
+  printf "\n********************** PRINTING VALGRIND LOG **************************\n"
+  tail -150 $VALGRINDLOGS
+  printf "\n**********************     LOG ENDS      **************************\n"
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Start testRunner ... 
 cd $TRAVIS_BUILD_DIR/examples/pxScene2d/src
@@ -57,7 +70,7 @@ count=0
 max_seconds=1500
 
 while [ "$retVal" -ne 0 ] &&  [ "$count" -ne "$max_seconds" ]; do
-	printf "\n [execute_osx.sh] snoozing for 30 seconds (%d of %d) \n" $count $max_seconds
+	printf "\n [execute_linux.sh] snoozing for 30 seconds (%d of %d) \n" $count $max_seconds
 	sleep 30; # seconds
 
 	grep "TEST RESULTS: " $EXECLOGS
@@ -74,7 +87,7 @@ done
 kill -15 `ps -ef | grep pxscene |grep -v grep|grep -v pxscene.sh|awk '{print $2}'`
 echo "Sleeping to make terminate complete ......";
 #wait for few seconds to get the application terminate completely, as it is attached with valgrind increasing the timeout
-sleep 20s;
+sleep 60s;
 pkill -9 -f pxscene.sh
 
 chmod 444 $VALGRINDLOGS
@@ -151,6 +164,19 @@ else
 	exit 1;
 fi
 
+#check for crash before valgrind test, as we might have got scenario where pxscene might have crashed during term
+ls -lrt *valgrind*
+$TRAVIS_BUILD_DIR/ci/check_dump_cores_linux.sh `pwd` pxscene $EXECLOGS
+retVal=$?
+if [ "$retVal" -eq 1 ]
+	then
+	checkError $retVal "Execution failed" "Core dump during exit" "Test by running locally"
+	if [ "$TRAVIS_PULL_REQUEST" != "false" ]
+		then
+                  printExecLogs
+	fi
+	exit 1;
+fi
 
 # Check for valgrind memory leaks
 grep "definitely lost: 0 bytes in 0 blocks" $VALGRINDLOGS
@@ -159,14 +185,22 @@ if [ "$retVal" -eq 0 ]
 	then
 	echo "************************* Valgrind reports success *************************";
 else
-	if [ "$TRAVIS_PULL_REQUEST" != "false" ]
-		then
-		errCause="Check the above logs"
-		printExecLogs
+	grep "definitely lost:" $VALGRINDLOGS
+	leakcheck=$?
+	if [ "$leakcheck" -eq 0 ]
+	then
+		errCause="Memory leaks present"
 	else
-		errCause="Check the file $VALGRINDLOGS and see for definitely lost count"
+		errCause="Execution stopped due to crash or abnormal execution"
 	fi
-	checkError $retVal "Valgrind execution reported memory leaks" "$errCause" "Follow the steps locally : export ENABLE_VALGRIND=1;export SUPPRESSIONS=<pxcore dir>/ci/leak.supp;./pxscene.sh $TESTRUNNERURL?tests=<pxcore dir>/tests/pxScene2d/testRunner/tests.json and fix the leaks"
+	if [ "$TRAVIS_PULL_REQUEST" != "false" ]
+	then
+		errCause="$errCause . Check the above logs"
+		printValgrindLogs
+	else
+		errCause="$errCause . Check the file $VALGRINDLOGS "
+	fi
+	checkError $retVal "Valgrind execution reported problem" "$errCause" "Follow the steps locally : export ENABLE_VALGRIND=1;export SUPPRESSIONS=<pxcore dir>/ci/leak.supp;./pxscene.sh $TESTRUNNERURL?tests=<pxcore dir>/tests/pxScene2d/testRunner/tests.json and fix it"
 	exit 1;
 fi
 exit 0;

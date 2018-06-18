@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -40,21 +40,14 @@ pxImageA::pxImageA(pxScene2d *scene) : pxObject(scene),
 
 pxImageA::~pxImageA()
 {
-  if (mListenerAdded)
-  {
-    if (getImageAResource())
-    {
-      getImageAResource()->removeListener(this);
-    }
-    mResource = NULL;
-    mListenerAdded = false;
-  }
+  removeResourceListener();
+  mResource = NULL;
 }
 
 void pxImageA::onInit() 
 {
-  mw = mImageWidth;
-  mh = mImageHeight;
+  mw = static_cast<float>(mImageWidth);
+  mh = static_cast<float>(mImageHeight);
 }
 
 rtError pxImageA::url(rtString &s) const
@@ -72,6 +65,10 @@ rtError pxImageA::url(rtString &s) const
 
 rtError pxImageA::setUrl(const char *s)
 {
+#ifdef ENABLE_PERMISSIONS_CHECK
+  if (mScene != NULL && RT_OK != mScene->permissions()->allows(s, rtPermissions::DEFAULT))
+    return RT_ERROR_NOT_ALLOWED;
+#endif
 
   rtImageAResource* resourceObj = getImageAResource();
   if( resourceObj != NULL && resourceObj->getUrl().length() > 0 && resourceObj->getUrl().compare(s))
@@ -88,6 +85,7 @@ rtError pxImageA::setUrl(const char *s)
       pxObject::createNewPromise();
     }
   }
+  removeResourceListener();
   mResource = pxImageManager::getImageA(s);
 
   if(getImageAResource() != NULL && getImageAResource()->getUrl().length() > 0 && !mImageLoaded) {
@@ -161,7 +159,7 @@ void pxImageA::draw()
   }
 }
 
-void pxImageA::dispose()
+void pxImageA::dispose(bool pumpJavascript)
 {
   if (mListenerAdded)
   {
@@ -172,7 +170,7 @@ void pxImageA::dispose()
     mResource = NULL;
     mListenerAdded = false;
   }
-  pxObject::dispose();
+  pxObject::dispose(pumpJavascript);
 }
 
 #if 0
@@ -234,15 +232,12 @@ rtError pxImageA::setResource(rtObjectRef o)
     // Only create new promise if url is different
     if( getImageAResource() != NULL && getImageAResource()->getUrl().compare(o.get<rtString>("url")) )
     {
+      removeResourceListener();
       mResource = o;
       mImageLoaded = false;
       pxObject::createNewPromise();
       mListenerAdded = true;
       getImageAResource()->addListener(this);
-#if 0
-      checkStretchX();
-      checkStretchY();
-#endif //0
     }
     return RT_OK;
   }
@@ -266,8 +261,8 @@ void pxImageA::loadImageSequence()
       pxOffscreen &o = imageSequence.getFrameBuffer(0);
       mImageWidth = o.width();
       mImageHeight = o.height();
-      mw = mImageWidth;
-      mh = mImageHeight;
+      mw = static_cast<float>(mImageWidth);
+      mh = static_cast<float>(mImageHeight);
     }
     mReady.send("resolve", this);
   }
@@ -292,8 +287,9 @@ void pxImageA::resourceReady(rtString readyResolution)
     pxObject* parent = mParent;
     if( !parent)
     {
-      //TODO - do we want to send promises this way or the way we have it?
-      //sendPromise();
+      // Send the promise here because the image will not get an 
+      // update call until it has a parent
+      sendPromise();
     }
   }
   else
@@ -301,6 +297,19 @@ void pxImageA::resourceReady(rtString readyResolution)
     pxObject::onTextureReady();
     mReady.send("reject",this);
   }
+}
+
+rtError pxImageA::removeResourceListener()
+{
+  if (mListenerAdded)
+  {
+    if (getImageAResource())
+    {
+      getImageAResource()->removeListener(this);
+    }
+    mListenerAdded = false;
+  }
+  return RT_OK;
 }
 
 rtDefineObject(pxImageA, pxObject);

@@ -1,5 +1,21 @@
-// pxCore CopyRight 2005-2006 John Robinson
-// Portable Framebuffer and Windowing Library
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 // pxWindowNative.cpp
 
 #include "../pxCore.h"
@@ -272,29 +288,23 @@ static void shell_surface_ping(void *data,
 
 static void shell_surface_configure(void *data, struct wl_shell_surface *shell_surface, uint32_t edges, int32_t width, int32_t height)
 {
-    pxWindowNative* w = (pxWindowNative*)data;
+    struct wl_surface *surface = (struct wl_surface *)data;
 
-    if (w->getWaylandNative())
-    {
-        wl_egl_window_resize(w->getWaylandNative(), width, height, 0, 0);
-    }
+    if (surface == NULL)
+        return;
+
+    pxWindowNative *pxWindow = (pxWindowNative *)wl_surface_get_user_data(surface);
+
+    if (pxWindow == NULL)
+        return;
+
+    struct wl_egl_window *egl_window = pxWindow->getWaylandNative();
+
+    if (egl_window == NULL)
+        return;
+
+    wl_egl_window_resize(egl_window, width, height, 0, 0);
 }
-
-static void shellSurfaceConfigure(void *data,
-    struct wl_shell_surface *shell_surface,
-    uint32_t edges, int32_t width, int32_t height) { }
-
-static void shellSurfacePing(void *data,
-    struct wl_shell_surface *shell_surface, uint32_t serial)
-{
-    wl_shell_surface_pong(shell_surface, serial);
-}
-
-static const struct wl_shell_surface_listener shell_surface_listener =
-{
-    .ping = shellSurfacePing,
-    .configure = shellSurfaceConfigure,
-};
 
 static void
 buffer_release(void *data, struct wl_buffer *buffer)
@@ -385,7 +395,8 @@ bool exitFlag = false;
 
 pxWindowNative::pxWindowNative(): mTimerFPS(0), mLastWidth(-1), mLastHeight(-1),
     mResizeFlag(false), mLastAnimationTime(0.0), mVisible(false), mDirty(true),
-    mWaylandSurface(NULL), mWaylandBuffer(), waylandBufferIndex(0)
+    mWaylandSurface(NULL), mWaylandBuffer(), waylandBufferIndex(0),
+    mEglNativeWindow(NULL), mEglSurface(NULL)
 {
 }
 
@@ -407,6 +418,7 @@ pxError pxWindow::init(int left, int top, int width, int height)
         //mShellSurfaceListener
         mShellSurfaceListener.ping = shell_surface_ping;
         mShellSurfaceListener.configure = shell_surface_configure;
+        mShellSurfaceListener.popup_done = NULL;
 
         mLastWidth = width;
         mLastHeight = height;
@@ -490,12 +502,12 @@ int pxWindowNative::createAndStartEventLoopTimer(int timeoutInMilliseconds )
     struct itimerspec       its;
     struct sigaction        sa;
     int                     sigNo = SIGRTMIN;
-    
+
     if (mEventLoopTimerStarted)
     {
         stopAndDeleteEventLoopTimer();
     }
-    
+
     displayRef dRef;
     waylandDisplay* wDisplay = dRef.getDisplay();
 
@@ -514,12 +526,12 @@ int pxWindowNative::createAndStartEventLoopTimer(int timeoutInMilliseconds )
     te.sigev_signo = sigNo;
     te.sigev_value.sival_ptr = wDisplay;
     timer_create(CLOCK_REALTIME, &te, &mRenderTimerId);
-    
+
     its.it_value.tv_sec = 0;
     its.it_value.tv_nsec = timeoutInMilliseconds * 1000000;
     its.it_interval = its.it_value;
     timer_settime(mRenderTimerId, 0, &its, NULL);
-    
+
     mEventLoopTimerStarted = true;
 
     return(0);
@@ -577,7 +589,6 @@ void pxWindowNative::runEventLoop()
     fileDescriptors[0].fd = wl_display_get_fd(display->display);
     fileDescriptors[0].events = POLLIN;
     int pollResult = 0;
-    int pollTimeout = 1000 / framerate;
 #endif //PXCORE_WL_DISPLAY_READ_EVENTS
     double maxSleepTime = (1000 / framerate) * 1000;
     rtLogInfo("max sleep time in microseconds: %f", maxSleepTime);
@@ -597,7 +608,11 @@ void pxWindowNative::runEventLoop()
         }
         wl_display_flush(display->display);
 
-        pollResult = poll(fileDescriptors, 1, pollTimeout);
+        do
+        {
+          pollResult = poll(fileDescriptors, 1, 1);
+        } while(pollResult == -1 && pollResult == EINTR);
+
         if (pollResult <= 0)
           wl_display_cancel_read(display->display);
         else
@@ -645,10 +660,10 @@ struct wl_shell_surface* pxWindowNative::createWaylandSurface()
     }
 
     wl_shell_surface_add_listener(shell_surface,
-        &mShellSurfaceListener, this);
+        &mShellSurfaceListener, surface);
     wl_shell_surface_set_toplevel(shell_surface);
-    wl_shell_surface_set_user_data(shell_surface, surface);
-    wl_surface_set_user_data(surface, NULL);
+
+    wl_surface_set_user_data(surface, this);
 
     //egl stuff
     mEglNativeWindow = (struct wl_egl_window *)wl_egl_window_create(surface,
@@ -666,6 +681,7 @@ struct wl_shell_surface* pxWindowNative::createWaylandSurface()
     assert(ret == EGL_TRUE);
 
     eglSwapInterval(display->egl.dpy, 0);
+    eglSurfaceAttrib(display->egl.dpy, mEglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_PRESERVED);
 
     return shell_surface;
 }
@@ -680,6 +696,7 @@ void pxWindowNative::cleanupWaylandData()
 
     eglDestroySurface(display->egl.dpy, mEglSurface);
     wl_egl_window_destroy(mEglNativeWindow);
+    mEglNativeWindow = NULL;
     //end egl stuff
 
     if (mWaylandBuffer[0].buffer)
@@ -872,8 +889,8 @@ void pxWindowNative::drawFrame()
     pxSurfaceNativeDesc d;
     d.windowWidth = mLastWidth;
     d.windowHeight = mLastHeight;
-    waylandBuffer *buffer = nextBuffer();
-    d.pixelData = (uint32_t*)buffer->shm_data;
+    //waylandBuffer *buffer = nextBuffer();
+    //d.pixelData = (uint32_t*)buffer->shm_data;
 
 
     onDraw(&d);

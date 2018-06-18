@@ -28,7 +28,8 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]
 then
     if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ]
     then
-      echo "Ignoring before install stage for $TRAVIS_EVENT_TYPE event";
+      sudo apt-get install jq
+      sudo apt-get install wget
       exit 0;
     fi
 fi
@@ -43,11 +44,12 @@ fi
 if [ "$TRAVIS_OS_NAME" = "osx" ] ;
 then
   brew update;
-  brew upgrade cmake;
+  #brew upgrade cmake;
   brew install quilt
   sudo /usr/sbin/DevToolsSecurity --enable
   lldb --version
   lldb --help
+  cmake --version
   man lldb
 fi
 
@@ -59,7 +61,7 @@ then
 #    brew install lighttpd
     brew install gcovr
     brew install lcov
-    brew install --HEAD ccache
+    brew install ccache
     ls -al $HOME/.ccache
   fi
 fi
