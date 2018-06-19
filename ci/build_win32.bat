@@ -43,12 +43,6 @@ if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
    echo "building edge"
    set uploadArtifact=True
 cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
-@echo off
-	
-
-call :FindReplace "Spark_installer.ico" "SparkEdge_installer.ico" CPackConfig.cmake
-call :FindReplace "Spark_installer.ico" "SparkEdge_installer.ico" CPackSourceConfig.cmake
-@echo on
 )
 
 for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') DO ( 
@@ -67,6 +61,13 @@ for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\sr
 	
 cmake --build . --config Release -- /m
 if %errorlevel% neq 0 exit /b %errorlevel%
+
+if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
+@echo off
+call :FindReplace "Spark_installer.ico" "SparkEdge_installer.ico" CPackConfig.cmake
+call :FindReplace "Spark_installer.ico" "SparkEdge_installer.ico" CPackSourceConfig.cmake
+@echo on
+)
 
 cpack .
 if %errorlevel% neq 0 exit /b %errorlevel%
