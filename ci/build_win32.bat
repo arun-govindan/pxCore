@@ -64,8 +64,8 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 
 if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
 @echo off
-call :FindReplace "Spark_installer.ico" "SparkEdge_installer.ico" CPackConfig.cmake
-call :FindReplace "Spark_installer.ico" "SparkEdge_installer.ico" CPackSourceConfig.cmake
+call :replaceString "CPackConfig.cmake"
+call :replaceString "CPackSourceConfig.cmake"
 @echo on
 )
 
@@ -90,23 +90,19 @@ if "%uploadArtifact%" == "True" (
         appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.zip" -DeploymentName "portable" -Type "Zip" -Verbosity "Normal"
 )
 
-:FindReplace <findstr> <replstr> <file>
-set tmp="%temp%\tmp.txt"
-If not exist %temp%\_.vbs call :MakeReplace
-for /f "tokens=*" %%a in ('dir "%3" /s /b /a-d /on') do (
-for /f "usebackq" %%b in (`Findstr /c:"%~1" "%%a"`) do (
-echo(&Echo Replacing "%~1" with "%~2" in file %%~nxa
-<%%a cscript //nologo %temp%\_.vbs "%~1" "%~2">%tmp%
-if exist %tmp% move /Y %tmp% "%%~dpnxa">nul
-)
-)
-del %temp%\_.vbs
+:replaceString <fileName>
+@echo off
+setlocal enableextensions disabledelayedexpansion
 
-:MakeReplace
->%temp%\_.vbs echo with Wscript
->>%temp%\_.vbs echo set args=.arguments
->>%temp%\_.vbs echo .StdOut.Write _
->>%temp%\_.vbs echo Replace(.StdIn.ReadAll,args(0),args(1),1,-1,1)
->>%temp%\_.vbs echo end with
+set "search=Spark_installer.ico"
+set "replace=SparkEdge_installer.ico"
 
+set "textFile=%~1"
+
+for /f "delims=" %%i in ('type "%textFile%" ^& break ^> "%textFile%" ') do (
+  set "line=%%i"
+  setlocal enabledelayedexpansion
+  >>"%textFile%" echo(!line:%search%=%replace%!
+  endlocal
+)
 
