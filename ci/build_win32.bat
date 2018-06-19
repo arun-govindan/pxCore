@@ -90,6 +90,8 @@ if "%uploadArtifact%" == "True" (
         appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.zip" -DeploymentName "portable" -Type "Zip" -Verbosity "Normal"
 )
 
+GOTO scriptEnd
+
 :replaceString <fileName>
 @echo off
 setlocal enableextensions disabledelayedexpansion
@@ -105,4 +107,7 @@ for /f "delims=" %%i in ('type "%textFile%" ^& break ^> "%textFile%" ') do (
   >>"%textFile%" echo(!line:%search%=%replace%!
   endlocal
 )
+
+:ScriptEnd
+  exit 0
 
