@@ -62,6 +62,14 @@ for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\sr
 cmake --build . --config Release -- /m
 if %errorlevel% neq 0 exit /b %errorlevel%
 
+if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
+  +@echo off
+  call :replaceString "CPackConfig.cmake"
+  call :replaceString "CPackSourceConfig.cmake"
+  @echo on
+)
+
+
 cpack .
 if %errorlevel% neq 0 exit /b %errorlevel%
 
@@ -83,4 +91,23 @@ if "%uploadArtifact%" == "True" (
         appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.zip" -DeploymentName "portable" -Type "Zip" -Verbosity "Normal"
 )
 
+GOTO scriptEnd
 
+:replaceString <fileName>
+  @echo off
+  setlocal enableextensions disabledelayedexpansion
+
+  set "search=Spark_installer.ico"
+  set "replace=SparkEdge_installer.ico"
+
+  set "textFile=%~1"
+
+  for /f "delims=" %%i in ('type "%textFile%" ^& break ^> "%textFile%" ') do (
+    set "line=%%i"
+    setlocal enabledelayedexpansion
+    >>"%textFile%" echo(!line:%search%=%replace%!
+    endlocal
+)
+
+:ScriptEnd
+  exit 0
