@@ -43,8 +43,8 @@ if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
   echo "building edge"
   set uploadArtifact=True
   cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
-  call :replaceString "CPackConfig.cmake"
-  call :replaceString "CPackSourceConfig.cmake"
+  call:replaceString "CPackConfig.cmake"
+  call:replaceString "CPackSourceConfig.cmake"
 )
 
 for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') DO ( 
@@ -91,7 +91,6 @@ if "%uploadArtifact%" == "True" (
 GOTO scriptEnd
 
 :replaceString <fileName>
-  @echo off
   setlocal enableextensions disabledelayedexpansion
 
   set "search=Spark_installer.ico"
@@ -105,6 +104,7 @@ GOTO scriptEnd
     >>"%textFile%" echo(!line:%search%=%replace%!
     endlocal
 )
+goto:eof
 
 :ScriptEnd
-  exit 0
+
