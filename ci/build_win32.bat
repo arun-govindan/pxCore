@@ -42,10 +42,12 @@ set uploadArtifact=False
 if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
   echo "building edge"
   set uploadArtifact=True
+  @echo off
   call:replaceString "..\examples\pxScene2d\src\win\pxscene.rc"
   cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
   call:replaceString "CPackConfig.cmake"
   call:replaceString "CPackSourceConfig.cmake"
+  @echo on
 )
 
 for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') DO ( 
@@ -66,8 +68,11 @@ cmake --build . --config Release -- /m
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 cpack .
-
-if %errorlevel% neq 0 exit /b %errorlevel% 
+if %errorlevel% neq 0  (
+  ls -l "C:/dw/pxCore/build-win32/_CPack_Packages/win32/NSIS/"
+  type "C:/dw/pxCore/build-win32/_CPack_Packages/win32/NSIS/NSISOutput.log"
+  exit /b %errorlevel% 
+)
 
 @rem create standalone archive
 cd _CPack_Packages/win32/NSIS
