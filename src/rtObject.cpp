@@ -116,7 +116,6 @@ rtError rtEmit::delListener(const char* eventName, rtIFunction* f)
 
 rtError rtEmit::Send(int numArgs, const rtValue* args, rtValue* result) 
 {
-  pthread_mutex_lock(&mEmitLock);
   (void)result;
   if (numArgs > 0)
   {
@@ -179,14 +178,15 @@ rtError rtEmit::Send(int numArgs, const rtValue* args, rtValue* result)
       }
     }
   }
-  pthread_mutex_unlock(&mEmitLock);
   return RT_OK;
 }
         
 // rtEmitRef
 rtError rtEmitRef::Send(int numArgs,const rtValue* args,rtValue* result) 
 {
+  pthread_mutex_lock(&mEmitLock);
   return (*this)->Send(numArgs, args, result);
+  pthread_mutex_unlock(&mEmitLock);
 }
 
 // rtArrayObject

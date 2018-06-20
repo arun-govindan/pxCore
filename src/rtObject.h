@@ -645,7 +645,7 @@ class rtEmit: public rtIFunction
 {
 
 public:
-  rtEmit(): mRefCount(0), mProcessingEvents(false),mEmitLock() {pthread_mutex_init(&mEmitLock, NULL);}
+  rtEmit(): mRefCount(0), mProcessingEvents(false) {}
   virtual ~rtEmit() {}
 
   virtual unsigned long AddRef();
@@ -682,14 +682,12 @@ protected:
   std::vector<_rtEmitEntry> mEntries;
   rtAtomic mRefCount;
   bool mProcessingEvents;
-private:
-  pthread_mutex_t mEmitLock;
 };
 
 class rtEmitRef: public rtRef<rtEmit>, public rtFunctionBase
 {
 public:
-  rtEmitRef() {}
+  rtEmitRef(): mEmitLock() {pthread_mutex_init(&mEmitLock, NULL);}
   rtEmitRef(rtEmit* e) { asn(e); }
 
   // operator= is not inherited
@@ -697,6 +695,7 @@ public:
 
 private:
   virtual rtError Send(int numArgs,const rtValue* args,rtValue* result);
+  pthread_mutex_t mEmitLock;
 };
 
 class rtArrayObject: public rtObject 
