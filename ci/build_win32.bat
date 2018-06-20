@@ -42,6 +42,7 @@ set uploadArtifact=False
 if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
   echo "building edge"
   set uploadArtifact=True
+  call:replaceString "..\examples\pxScene2d\src\win\pxscene.rc"
   cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
   call:replaceString "CPackConfig.cmake"
   call:replaceString "CPackSourceConfig.cmake"
@@ -65,10 +66,8 @@ cmake --build . --config Release -- /m
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 cpack .
-if %errorlevel% neq 0 (
-type "C:/dw/pxCore/build-win32/_CPack_Packages/win32/NSIS/NSISOutput.log"
-exit /b %errorlevel%
-)
+
+if %errorlevel% neq 0 exit /b %errorlevel% 
 
 @rem create standalone archive
 cd _CPack_Packages/win32/NSIS
@@ -91,19 +90,21 @@ if "%uploadArtifact%" == "True" (
 GOTO scriptEnd
 
 :replaceString <fileName>
-  setlocal enableextensions disabledelayedexpansion
+set INTEXTFILE=%~1
+set OUTTEXTFILE=%~1.mod
+set SEARCHTEXT=Spark_installer.ico
+set REPLACETEXT=SparkEdge_installer.ico
+for /f "tokens=1,* delims=¶" %%A in ( '"type %INTEXTFILE%"') do (
+    SET string=%%A
+        setlocal EnableDelayedExpansion
+            SET modified=!string:%SEARCHTEXT%=%REPLACETEXT%!
 
-  set "search=Spark_installer.ico"
-  set "replace=SparkEdge_installer.ico"
-
-  set "textFile=%~1"
-
-  for /f "delims=" %%i in ('type "%textFile%" ^& break ^> "%textFile%" ') do (
-    set "line=%%i"
-    setlocal enabledelayedexpansion
-    >>"%textFile%" echo(!line:%search%=%replace%!
-    endlocal
-)
+                >> %OUTTEXTFILE% echo(!modified!
+                    endlocal
+                    )
+                    del %INTEXTFILE%
+                    copy %OUTTEXTFILE% %INTEXTFILE%
+                    del %OUTTEXTFILE%
 goto:eof
 
 :ScriptEnd
