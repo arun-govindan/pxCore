@@ -7,6 +7,11 @@ logfile="$3"
 
 #take report from lldb
 cd $path
+printf "\n********************* process id list *********************\n"
+echo ps -ef | grep pxscene |grep -v grep|grep -v pxscene.sh|awk '{print $2}'
+echo ps -ef | grep /bin/sh |grep -v grep|awk '{print $2}'
+printf "\n***********************************************************\n"
+        
 echo "sudo lldb -o \"attach $process\" -o \"bt all\" -o \"quit\" 1>lldblogs 2>/dev/null"
 sudo lldb -o "attach $process" -o "bt all" -o "quit" 1>lldblogs 2>/dev/null
 
