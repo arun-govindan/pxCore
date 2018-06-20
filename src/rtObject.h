@@ -645,7 +645,7 @@ class rtEmit: public rtIFunction
 {
 
 public:
-  rtEmit(): mRefCount(0), mProcessingEvents(false) {}
+  rtEmit(): mRefCount(0), mProcessingEvents(false),mEmitLock() {pthread_mutex_init(&mEmitLock, NULL);}
   virtual ~rtEmit() {}
 
   virtual unsigned long AddRef();
@@ -682,6 +682,8 @@ protected:
   std::vector<_rtEmitEntry> mEntries;
   rtAtomic mRefCount;
   bool mProcessingEvents;
+private:
+  pthread_mutex_t mEmitLock;
 };
 
 class rtEmitRef: public rtRef<rtEmit>, public rtFunctionBase
