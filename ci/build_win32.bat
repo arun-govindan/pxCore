@@ -43,6 +43,12 @@ if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
    echo "building edge"
    set uploadArtifact=True
 cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
+@echo off
+	
+
+call :FindReplace "Spark_installer.ico" "SparkEdge_installer.ico" CPackConfig.cmake
+call :FindReplace "Spark_installer.ico" "SparkEdge_installer.ico" CPackSourceConfig.cmake
+@echo on
 )
 
 for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') DO ( 
@@ -82,5 +88,24 @@ if "%uploadArtifact%" == "True" (
         @rem Standalone (requires no installation)
         appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.zip" -DeploymentName "portable" -Type "Zip" -Verbosity "Normal"
 )
+
+:FindReplace <findstr> <replstr> <file>
+set tmp="%temp%\tmp.txt"
+If not exist %temp%\_.vbs call :MakeReplace
+for /f "tokens=*" %%a in ('dir "%3" /s /b /a-d /on') do (
+for /f "usebackq" %%b in (`Findstr /c:"%~1" "%%a"`) do (
+echo(&Echo Replacing "%~1" with "%~2" in file %%~nxa
+<%%a cscript //nologo %temp%\_.vbs "%~1" "%~2">%tmp%
+if exist %tmp% move /Y %tmp% "%%~dpnxa">nul
+)
+)
+del %temp%\_.vbs
+
+:MakeReplace
+>%temp%\_.vbs echo with Wscript
+>>%temp%\_.vbs echo set args=.arguments
+>>%temp%\_.vbs echo .StdOut.Write _
+>>%temp%\_.vbs echo Replace(.StdIn.ReadAll,args(0),args(1),1,-1,1)
+>>%temp%\_.vbs echo end with
 
 
