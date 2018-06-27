@@ -209,9 +209,13 @@ rtError rtEmit::Send(int numArgs, const rtValue* args, rtValue* result)
 // rtEmitRef
 rtError rtEmitRef::Send(int numArgs,const rtValue* args,rtValue* result) 
 {
-	pthread_mutex_lock(&mEmitRefLock);
-	rtError ret = (*this)->Send(numArgs, args, result);
-	pthread_mutex_unlock(&mEmitRefLock);
+	rtError ret = RT_OK;
+	if(this)
+	{
+		pthread_mutex_lock(&mEmitRefLock);
+		ret = (*this)->Send(numArgs, args, result);
+		pthread_mutex_unlock(&mEmitRefLock);
+	}
 	return ret;
 }
 
