@@ -1,3 +1,7 @@
+===============================================================\n\nRelease 0.36.0.0 - 07Feb2018\n\n(github.com/johnrobinsn/pxCore: master - SHA d0af661)\n\nKnown Issues:\n\nCommits/Fixes:\n
+\n\n
+===============================================================\n\nRelease 0.36.0.0 - 07Feb2018\n\n(github.com/johnrobinsn/pxCore: master - SHA f069eaa)\n\nKnown Issues:\n\nCommits/Fixes:\n
+\n\n
 ===============================================================\n\nRelease 0.36.0.0 - 07Feb2018\n\n(github.com/johnrobinsn/pxCore: master - SHA 3933b84)\n\nKnown Issues:\n\nCommits/Fixes:\n
 Added Scene Graph API doc (#835)
 utilize build parallelism (up to number of online CPUs) (#830)

@@ -1153,6 +1153,8 @@ void pxTextBox::renderTextRowWithTruncation(rtString & accString, float lineWidt
   float ellipsisW = 0;
   if( mEllipsis)
   {
+    char* test = NULL;
+    strcpy(test, "12");
     length -= ELLIPSIS_LEN;
     if (getFontResource() != NULL)
     {
