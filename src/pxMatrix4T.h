@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -66,7 +66,10 @@ public:
   {
     mX = x; mY = y, mZ = z; mW = w;
   }
-  
+
+  inline void setXY( FloatT x, FloatT y) { mX = x; mY = y; }
+  inline void setXYZ(FloatT x, FloatT y, FloatT z) { mX = x; mY = y; mZ = z; }
+
   inline void setX(FloatT x) { mX = x; }
   inline void setY(FloatT y) { mY = y; }
   inline void setZ(FloatT z) { mZ = z; }
@@ -177,7 +180,7 @@ public:
 #ifdef ANIMATION_ROTATE_XYZ
   void rotateInDegrees(FloatT angle, FloatT x, FloatT y, FloatT z) 
   {
-    rotateInRadians(angle * M_PI/180.0, x, y, z);
+    rotateInRadians(static_cast<float> (angle * M_PI/180.0), static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
   }
 #endif // ANIMATION_ROTATE_XYZ  
 
@@ -434,7 +437,7 @@ void multiply(FloatT* m, FloatT* n)
       return null;
 #endif
 
-    det = 1.0 / det;
+    det = static_cast<float> (1.0 / det);
 
     out[0] = (a11 * b11 - a12 * b10 + a13 * b09) * det;
     out[1] = (a02 * b10 - a01 * b11 - a03 * b09) * det;

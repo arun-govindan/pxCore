@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -68,6 +68,8 @@
 #include "rtPermissions.h"
 #endif
 
+#include "rtServiceProvider.h"
+
 #ifdef RUNINMAIN
 #define ENTERSCENELOCK()
 #define EXITSCENELOCK() 
@@ -88,7 +90,7 @@ class AsyncScriptInfo {
 //#define USE_SCENE_POINTER
 
 // TODO Move this to pxEventLoop
-extern rtThreadQueue gUIThreadQueue;
+extern rtThreadQueue* gUIThreadQueue;
 
 // TODO Finish
 //#include "pxTransform.h"
@@ -163,6 +165,8 @@ public:
   rtProperty(y, y, setY, float);
   rtProperty(w, w, setW, float);
   rtProperty(h, h, setH, float);
+  rtProperty(px, px, setPX, float);
+  rtProperty(py, py, setPY, float);
   rtProperty(cx, cx, setCX, float);
   rtProperty(cy, cy, setCY, float);
   rtProperty(sx, sx, setSX, float);
@@ -246,14 +250,15 @@ public:
   
 
   // TODO missing conversions in rtValue between uint32_t and int32_t
-  uint32_t numChildren() const { return mChildren.size(); }
+  size_t numChildren() const { return mChildren.size(); }
   rtError numChildren(int32_t& v) const 
   {
-    v = mChildren.size();
+    v = (int32_t) mChildren.size();
     return RT_OK;
   }
 
-  virtual rtError Set(const char* name, const rtValue* value);
+  virtual rtError Set(uint32_t i, const rtValue* value) override;
+  virtual rtError Set(const char* name, const rtValue* value) override;
 
   rtError getChild(uint32_t i, rtObjectRef& r) const
   {
@@ -315,6 +320,12 @@ public:
   float h()             const { return mh; }
   rtError h(float& v)   const { v = mh; return RT_OK;   }
   virtual rtError setH(float v)       { cancelAnimation("h"); createNewPromise();mh = v; return RT_OK;   }
+  float px()            const { return mpx;}
+  rtError px(float& v)  const { v = mpx; return RT_OK;  }
+  rtError setPX(float v)      { cancelAnimation("px"); createNewPromise();mpx = (v > 1) ? 1 : (v < 0) ? 0 : v; return RT_OK;  }
+  float py()            const { return mpy;}
+  rtError py(float& v)  const { v = mpy; return RT_OK;  }
+  rtError setPY(float v)      { cancelAnimation("py"); createNewPromise();mpy = (v > 1) ? 1 : (v < 0) ? 0 : v; return RT_OK;  }
   float cx()            const { return mcx;}
   rtError cx(float& v)  const { v = mcx; return RT_OK;  }
   rtError setCX(float v)      { cancelAnimation("cx"); createNewPromise();mcx = v; return RT_OK;  }
@@ -379,7 +390,7 @@ public:
   rtError moveToFront();
   rtError moveToBack();
 
-  virtual void dispose();
+  virtual void dispose(bool pumpJavascript);
 
   void drawInternal(bool maskPass=false);
   virtual void draw() {}
@@ -407,7 +418,7 @@ public:
                  pxInterp interp, pxConstantsAnimation::animationOptions options,
                  int32_t count, rtObjectRef promise, rtObjectRef animateObj);
 
-  void cancelAnimation(const char* prop, bool fastforward = false, bool rewind = false, bool resolve = false);
+  void cancelAnimation(const char* prop, bool fastforward = false, bool rewind = false);
 
   rtError addListener(rtString eventName, const rtFunctionRef& f)
   {
@@ -491,9 +502,14 @@ public:
     if (!mUseMatrix)
     {
 #if 1
+      float dx = -(mpx * mw);
+      float dy = -(mpy * mh);
+      
       // translate based on xy rotate/scale based on cx, cy
-      m.translate(mx+mcx, my+mcy);
-      if (mr) {
+      m.translate(mx + mcx + dx, my + mcy + dy);
+      
+      if (mr)
+      {
         m.rotateInDegrees(mr
 #ifdef ANIMATION_ROTATE_XYZ
         , mrx, mry, mrz
@@ -695,9 +711,12 @@ public:
 
   rtError releaseResources()
   {
-     dispose();
+     dispose(true);
      return RT_OK;
   }
+
+  pxScene2d* getScene() { return mScene; }
+  void createSnapshot(pxContextFramebufferRef& fbo, bool separateContext=false, bool antiAliasing=false);
 
 public:
   rtEmitRef mEmit;
@@ -708,7 +727,7 @@ protected:
   pxObject* mParent;
   std::vector<rtRef<pxObject> > mChildren;
 //  vector<animation> mAnimations;
-  float mcx, mcy, mx, my, ma, mr;
+  float mpx, mpy, mcx, mcy, mx, my, ma, mr;
 #ifdef ANIMATION_ROTATE_XYZ
   float mrx, mry, mrz;
 #endif // ANIMATION_ROTATE_XYZ
@@ -735,7 +754,6 @@ protected:
   pxRect mDirtyRect;
   #endif //PX_DIRTY_RECTANGLES
 
-  void createSnapshot(pxContextFramebufferRef& fbo, bool separateContext=false, bool antiAliasing=false);
   void createSnapshotOfChildren();
   void clearSnapshot(pxContextFramebufferRef fbo);
   #ifdef PX_DIRTY_RECTANGLES
@@ -810,12 +828,17 @@ public:
     if (mView)
     {
       mView->setViewContainer(this);
-      mView->onSize(mw,mh);
+      mView->onSize(static_cast<int32_t>(mw),static_cast<int32_t>(mh));
     }
     return RT_OK;
   }
 
   void invalidateRect(pxRect* r);
+
+  virtual void* getInterface(const char* /*name*/)
+  {
+    return NULL;
+  }  
 
 #if 0
   rtError url(rtString& v) const { v = mUri; return RT_OK; }
@@ -827,7 +850,7 @@ public:
   { 
     mw = v; 
     if (mView)
-      mView->onSize(mw,mh); 
+      mView->onSize(static_cast<int32_t>(mw),static_cast<int32_t>(mh)); 
     return RT_OK; 
   }
   
@@ -836,7 +859,7 @@ public:
   { 
     mh = v; 
     if (mView)
-      mView->onSize(mw,mh); 
+      mView->onSize(static_cast<int32_t>(mw),static_cast<int32_t>(mh)); 
     return RT_OK; 
   }
 
@@ -848,7 +871,7 @@ public:
       float x = o.get<float>("x");
       float y = o.get<float>("y");
       uint32_t flags = o.get<uint32_t>("flags");
-      mView->onMouseDown(x,y,flags);
+      mView->onMouseDown(static_cast<int32_t>(x),static_cast<int32_t>(y),flags);
     }
     return RT_OK;
   }
@@ -861,7 +884,7 @@ public:
       float x = o.get<float>("x");
       float y = o.get<float>("y");
       uint32_t flags = o.get<uint32_t>("flags");
-      mView->onMouseUp(x,y,flags);
+      mView->onMouseUp(static_cast<int32_t>(x),static_cast<int32_t>(y),flags);
     }
     return RT_OK;
   }
@@ -873,7 +896,7 @@ public:
     {
       float x = o.get<float>("x");
       float y = o.get<float>("y");
-      mView->onMouseMove(x,y);
+      mView->onMouseMove(static_cast<int32_t>(x),static_cast<int32_t>(y));
     }
     return RT_OK;
   }
@@ -990,11 +1013,12 @@ public:
   rtDeclareObject(pxSceneContainer, pxViewContainer);
   rtProperty(url, url, setUrl, rtString);
 #ifdef ENABLE_PERMISSIONS_CHECK
-  // declare 'permissions' before 'ready'
+  // permissions can be set to either scene or to its container
   rtProperty(permissions, permissions, setPermissions, rtObjectRef);
 #endif
   rtReadOnlyProperty(api, api, rtValue);
   rtReadOnlyProperty(ready, ready, rtObjectRef);
+  rtProperty(serviceContext, serviceContext, setServiceContext, rtObjectRef);
 
 //  rtMethod1ArgAndNoReturn("makeReady", makeReady, bool);  // DEPRECATED ?
   
@@ -1008,7 +1032,7 @@ public:
     return c;
   }
 
-  void dispose();
+  virtual void dispose(bool pumpJavascript);
   rtError url(rtString& v) const { v = mUrl; return RT_OK; }
   rtError setUrl(rtString v);
 
@@ -1016,10 +1040,12 @@ public:
 
   rtError api(rtValue& v) const;
   rtError ready(rtObjectRef& o) const;
+  
+  rtError serviceContext(rtObjectRef& o) const { o = mServiceContext; return RT_OK;}
+  rtError setServiceContext(rtObjectRef o);
 
 #ifdef ENABLE_PERMISSIONS_CHECK
-  rtError setParentPermissions(const rtPermissions* v);
-  rtError permissions(rtObjectRef& v) const { UNUSED_PARAM(v); rtLogDebug("permissions is write only"); return RT_FAIL; }
+  rtError permissions(rtObjectRef& v) const;
   rtError setPermissions(const rtObjectRef& v);
 #endif
 
@@ -1030,10 +1056,13 @@ public:
   // createNewPromise to prevent firing from update() 
   virtual void sendPromise() { rtLogDebug("pxSceneContainer ignoring sendPromise\n"); }
   virtual void createNewPromise(){ rtLogDebug("pxSceneContainer ignoring createNewPromise\n"); }
+
+  virtual void* getInterface(const char* name);
   
 private:
   rtRef<pxScriptView> mScriptView;
   rtString mUrl;
+  rtObjectRef mServiceContext;
 };
 typedef rtRef<pxSceneContainer> pxSceneContainerRef;
 
@@ -1075,8 +1104,8 @@ public:
     // TODO JRJR Do we have GC tests yet
     // Hack to try and reduce leaks until garbage collection can
     // be cleaned up
-
-    mEmit.send("onSceneRemoved", mScene);
+    if(mScene)
+      mEmit.send("onSceneRemoved", mScene);
 
     if (mScene)
       mScene.send("dispose");
@@ -1122,8 +1151,8 @@ public:
   rtString getUrl() const { return mUrl; }
 
 #ifdef ENABLE_PERMISSIONS_CHECK
-  rtError setParentPermissions(const rtPermissions* v);
-  rtError setPermissions(const rtObjectRef& v);
+  rtError permissions(rtObjectRef& v) const { return mScene.get("permissions", v); }
+  rtError setPermissions(const rtObjectRef& v) { return mScene.set("permissions", v); }
 #endif
 
   static rtError addListener(rtString  eventName, const rtFunctionRef& f)
@@ -1270,7 +1299,7 @@ protected:
   static rtEmitRef mEmit;
 };
 
-class pxScene2d: public rtObject, public pxIView 
+class pxScene2d: public rtObject, public pxIView, public rtIServiceProvider
 {
 public:
   rtDeclareObject(pxScene2d, rtObject);
@@ -1282,8 +1311,9 @@ public:
   rtProperty(customAnimator, customAnimator, setCustomAnimator, rtFunctionRef);
   rtMethod1ArgAndReturn("loadArchive",loadArchive,rtString,rtObjectRef); 
   rtMethod1ArgAndReturn("create", create, rtObjectRef, rtObjectRef);
-  rtMethodNoArgAndReturn("clock", clock, uint64_t);
+  rtMethodNoArgAndReturn("clock", clock, double);
   rtMethodNoArgAndNoReturn("logDebugMetrics", logDebugMetrics);
+  rtMethodNoArgAndNoReturn("collectGarbage", collectGarbage);
   rtReadOnlyProperty(info, info, rtObjectRef);
 /*
   rtMethod1ArgAndReturn("createExternal", createExternal, rtObjectRef,
@@ -1308,6 +1338,8 @@ public:
   rtMethod2ArgAndNoReturn("clipboardSet", clipboardSet, rtString, rtString);
 
   rtMethod1ArgAndReturn("getService", getService, rtString, rtObjectRef);
+
+  rtMethodNoArgAndReturn("getAvailableApplications", getAvailableApplications, rtString);
     
     
   rtProperty(ctx, ctx, setCtx, rtValue);
@@ -1316,15 +1348,23 @@ public:
   // Properties for returning various CONSTANTS
   rtReadOnlyProperty(animation,animation,rtObjectRef);
   rtReadOnlyProperty(stretch,stretch,rtObjectRef);
+  rtReadOnlyProperty(maskOp,maskOp,rtObjectRef);
   rtReadOnlyProperty(alignVertical,alignVertical,rtObjectRef);
   rtReadOnlyProperty(alignHorizontal,alignHorizontal,rtObjectRef);
   rtReadOnlyProperty(truncation,truncation,rtObjectRef);
 
   rtReadOnlyProperty(origin, origin, rtString);
-  rtMethod1ArgAndReturn("allows", allows, rtString, bool);
   rtMethod2ArgAndReturn("checkAccessControlHeaders", checkAccessControlHeaders, rtString, rtString, bool);
 
   rtMethodNoArgAndNoReturn("dispose",dispose);
+
+  rtMethod1ArgAndNoReturn("addServiceProvider", addServiceProvider, rtFunctionRef);
+  rtMethod1ArgAndNoReturn("removeServiceProvider", removeServiceProvider, rtFunctionRef);
+
+#ifdef ENABLE_PERMISSIONS_CHECK
+  // permissions can be set to either scene or to its container
+  rtProperty(permissions, permissions, setPermissions, rtObjectRef);
+#endif
 
   pxScene2d(bool top = true, pxScriptView* scriptView = NULL);
   virtual ~pxScene2d()
@@ -1349,6 +1389,29 @@ public:
     if (l == 0)
       delete this;
     return l;
+  }
+
+  rtError addServiceProvider(const rtFunctionRef& p)
+  {
+    if (p)
+      mServiceProviders.push_back(p);
+    return RT_OK;
+  }
+
+  rtError removeServiceProvider(const rtFunctionRef& p)
+  {
+    if (p)
+    {
+      for(std::vector<rtFunctionRef>::iterator i = mServiceProviders.begin(); i != mServiceProviders.end(); i++)
+      {
+        if (*i == p)
+        {
+          mServiceProviders.erase(i);
+          break;
+        }
+      }
+    }
+    return RT_OK;
   }
 
 //  void init();
@@ -1386,8 +1449,9 @@ public:
   rtError createExternal(rtObjectRef p, rtObjectRef& o);
   rtError createWayland(rtObjectRef p, rtObjectRef& o);
 
-  rtError clock(uint64_t & time);
+  rtError clock(double & time);
   rtError logDebugMetrics();
+  rtError collectGarbage();
 
   rtError addListener(rtString eventName, const rtFunctionRef& f)
   {
@@ -1425,19 +1489,20 @@ public:
   rtError emit(rtFunctionRef& v) const { v = mEmit; return RT_OK; }
   
   rtError animation(rtObjectRef& v) const {v = CONSTANTS.animationConstants; return RT_OK;}
-  rtError stretch(rtObjectRef& v) const {v = CONSTANTS.stretchConstants; return RT_OK;}
-  rtError alignVertical(rtObjectRef& v) const {v = CONSTANTS.alignVerticalConstants; return RT_OK;}
+  rtError stretch(rtObjectRef& v)   const {v = CONSTANTS.stretchConstants;   return RT_OK;}
+  rtError maskOp(rtObjectRef& v)    const {v = CONSTANTS.maskOpConstants;    return RT_OK;}  
+  
+  rtError alignVertical(rtObjectRef& v)   const {v = CONSTANTS.alignVerticalConstants;   return RT_OK;}
   rtError alignHorizontal(rtObjectRef& v) const {v = CONSTANTS.alignHorizontalConstants; return RT_OK;}
-  rtError truncation(rtObjectRef& v) const {v = CONSTANTS.truncationConstants; return RT_OK;}
+  rtError truncation(rtObjectRef& v)      const {v = CONSTANTS.truncationConstants;      return RT_OK;}
 
 #ifdef ENABLE_PERMISSIONS_CHECK
-  rtError setParentPermissions(const rtPermissions* v) { return mPermissions.setParent(v); }
-  rtError setPermissions(const rtObjectRef& v) { return mPermissions.set(v); }
-  rtError permissions(rtPermissions& v) const { v = mPermissions; return RT_OK; }
+  rtPermissionsRef permissions() const { return mPermissions; }
+  rtError permissions(rtObjectRef& v) const { v = mPermissions; return RT_OK; }
+  rtError setPermissions(const rtObjectRef& v) { return mPermissions->set(v); }
 #endif
 
   rtError origin(rtString& v) const { v = mOrigin; return RT_OK; }
-  rtError allows(const rtString& url, bool& o) const;
   rtError checkAccessControlHeaders(const rtString& url, const rtString& rawHeaders, bool& allow) const;
 
   void setMouseEntered(rtRef<pxObject> o);//setMouseEntered(pxObject* o);
@@ -1462,10 +1527,7 @@ public:
   virtual void onDraw();
   virtual void onComplete();
 
-  virtual void setViewContainer(pxIViewContainer* l) 
-  {
-    mContainer = l;
-  }
+  virtual void setViewContainer(pxIViewContainer* l);
 
   void invalidateRect(pxRect* r);
   
@@ -1486,8 +1548,6 @@ public:
     v = getRoot();
     return RT_OK;
   }
-
-  rtObjectRef getCanvas() const { return mCanvas; };
  
   rtObjectRef  getInfo() const;
   rtError info(rtObjectRef& v) const
@@ -1499,11 +1559,8 @@ public:
   rtError loadArchive(const rtString& url, rtObjectRef& archive)
   {
 #ifdef ENABLE_PERMISSIONS_CHECK
-    if (!mPermissions.allows(url.cString(), rtPermissions::DEFAULT))
-    {
-      rtLogError("url '%s' is not allowed", url.cString());
+    if (RT_OK != mPermissions->allows(url, rtPermissions::DEFAULT))
       return RT_ERROR_NOT_ALLOWED;
-    }
 #endif
 
     rtError e = RT_FAIL;
@@ -1523,10 +1580,14 @@ public:
   rtError clipboardGet(rtString type, rtString& retString);
   rtError clipboardSet(rtString type, rtString clipString);
   rtError getService(rtString name, rtObjectRef& returnObject);
+  rtError getService(const char* name, const rtObjectRef& ctx, rtObjectRef& service);
+  rtError getAvailableApplications(rtString& availableApplications);
 
 private:
   bool bubbleEvent(rtObjectRef e, rtRef<pxObject> t, 
                    const char* preEvent, const char* event) ;
+  
+  bool bubbleEventOnBlur(rtObjectRef e, rtRef<pxObject> t, rtRef<pxObject> o);
 
   void draw();
   // Does not draw updates scene to time t
@@ -1542,8 +1603,6 @@ private:
   int frameCount;
   int mWidth;
   int mHeight;
-
-  rtObjectRef mCanvas; // for SVG drawing
 
   rtEmitRef mEmit;
 
@@ -1575,20 +1634,21 @@ private:
   rtFunctionRef mCustomAnimator;
   rtString mOrigin;
 #ifdef ENABLE_PERMISSIONS_CHECK
-  rtPermissions mPermissions;
+  rtPermissionsRef mPermissions;
 #endif
 public:
   void hidePointer( bool hide )
   {
      mPointerHidden= hide;
   }
-  bool mDirty;
   #ifdef PX_DIRTY_RECTANGLES
   pxRect mDirtyRect;
   pxRect mLastFrameDirtyRect;
   #endif //PX_DIRTY_RECTANGLES
+  bool mDirty;
   testView* mTestView;
   bool mDisposed;
+  std::vector<rtFunctionRef> mServiceProviders;
 };
 
 // TODO do we need this anymore?
@@ -1602,10 +1662,10 @@ class pxScene2dRef: public rtRef<pxScene2d>, public rtObjectBase
   pxScene2dRef& operator=(pxScene2d* s) { asn(s); return *this; }
   
  private:
-  virtual rtError Get(const char* name, rtValue* value) const;
-  virtual rtError Get(uint32_t i, rtValue* value) const;
-  virtual rtError Set(const char* name, const rtValue* value);
-  virtual rtError Set(uint32_t i, const rtValue* value);
+  virtual rtError Get(const char* name, rtValue* value) const override;
+  virtual rtError Get(uint32_t i, rtValue* value) const override;
+  virtual rtError Set(const char* name, const rtValue* value) override;
+  virtual rtError Set(uint32_t i, const rtValue* value) override;
 };
 
 

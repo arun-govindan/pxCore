@@ -1,3 +1,21 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 var isDuk = (typeof timers != "undefined")?true:false;
 
 var RPCContext = require('rcvrcore/rpcContext');
@@ -12,14 +30,19 @@ function Scene() {
   this._setNativeScene = function(scene, filePath) {
     if( nativeScene === null ) {
       nativeScene = scene;
+      // TODO JRJR try to get rid of this stuff... 
+
       this.animation = scene.animation;
       this.stretch   = scene.stretch;
+      this.maskOp    = scene.maskOp;
       this.alignVertical = scene.alignVertical;
       this.alignHorizontal = scene.alignHorizontal;
       this.truncation = scene.truncation;
       this.root = scene.root;
       this.info = scene.info;
       this.filePath = filePath;
+      this.addServiceProvider = scene.addServiceProvider;
+      this.removeServiceProvider = scene.removeServiceProvider;
       if (!isDuk) { 
         this.__defineGetter__("w", function() { return scene.w; });
         this.__defineGetter__("h", function() { return scene.h; });
@@ -52,6 +75,10 @@ function Scene() {
     return nativeScene.logDebugMetrics();
   };
 
+  this.collectGarbage = function() {
+    return nativeScene.collectGarbage();
+  };
+
   this.loadArchive = function(u) {
     return nativeScene.loadArchive(u);
   };
@@ -72,64 +99,63 @@ function Scene() {
   this.create = function create(params) {
     applyStyle.call(this, params);
 
-    if(params.hasOwnProperty("d") && params.t === "path")
-    {
-        if(params.d.match(/rect/i) )
+      function getColor(val)
+      {
+        clr = "" + val + "";
+        
+        var ans = 0x00000000; // transparent (default)
+        
+        // Support #RRGGBB web style color syntax
+        if(clr.match(/#([0-9a-f]{6})/i) )
         {
-          params.d = params.d.replace(/rect/gi, "RECT");
-          
-          // normalize the path
-          params.d = params.d.replace(/,/g," ")
-          .replace(/-/g," -")
-          .replace(/ +/g," ");
-          
-           // console.log(" >>> Found RECT: [" + params.d + "] ");
+          clr = clr.replace(/#([0-9a-f]{6})/i, "0x$1FF");  // tack on ALPHA at lsb to ($1) amtch
+          ans = parseInt(clr, 16);
         }
         else
-        if(params.d.match(/circle/i) )
+        // Support #RGB web style color syntax
+        if(clr.match(/#([0-9a-f]{1})([0-9a-f]{1})([0-9a-f]{1})/i) )
         {
-          params.d = params.d.replace(/circle/gi, "CIRCLE");
-          
-          // normalize the path
-          params.d = params.d.replace(/,/g," ")
-          .replace(/-/g," -")
-          .replace(/ +/g," ");
-          
-          // console.log(" >>> Found CIRCLE: [" + params.d + "] ");
-        }
-        else
-        if(params.d.match(/ellipse/i))
-        {
-          params.d = params.d.replace(/ellipse/gi, "ELLIPSE");
-          
-          // normalize the path
-          params.d = params.d.replace(/,/g," ")
-          .replace(/-/g," -")
-          .replace(/ +/g," ");
-          
-          // console.log(" >>> Found ELLIPSE: [" + params.d + "] ");
+          clr = clr.replace(/#([0-9a-f]{1})([0-9a-f]{1})([0-9a-f]{1})/i, "0x$1$1$2$2$3$3FF"); //  #rgb >>> 0xrrggbb
+          ans = parseInt(clr, 16);
         }
         else
         {
-          // normalize the path
-          params.d = params.d.replace(/\s*([mlvhqczastTSAMLVHQCZ])\s*/g,"\n$1 ")
-          .replace(/,/g," ")
-          .replace(/-/g," -")
-          .replace(/ +/g," ");
+          ans = val; // pass-through
         }
-    }
- 
-    var component = null;
-    if( componentDefinitions !== null && params.hasOwnProperty("t") ) {
-      component = createComponent(params);
-    }
+        
+        return ans;
+      }
+        
+      // Support for Web colors using #RGB  or #RRGGBB syntax
+      if(params.hasOwnProperty("textColor") )
+      {
+        params.textColor = getColor(params.textColor);
+      }
+      
+      // Support for Web colors using #RGB  or #RRGGBB syntax
+      if(params.hasOwnProperty("lineColor") )
+      {
+        params.lineColor = getColor(params.lineColor);
+      }
+  
+      // Support for Web colors using #RGB  or #RRGGBB syntax
+      if(params.hasOwnProperty("fillColor") )
+      {
+        params.fillColor = getColor(params.fillColor);
+      }
+   
+      var component = null;
+      if( componentDefinitions !== null && params.hasOwnProperty("t") )
+      {
+        component = createComponent(params);
+      }
 
-    if( component !== null ) {
-      return component;
-    } else {
-      return nativeScene.create(params);
-    }
-  };
+      if( component !== null ) {
+        return component;
+      } else {
+        return nativeScene.create(params);
+      }
+  }; // ENDIF - create()
   
   this.stopPropagation = function() {
     return nativeScene.stopPropagation();
@@ -166,6 +192,10 @@ function Scene() {
 
   this.getService = function getService(name, serviceObject) {
     return nativeScene.getService(name, serviceObject);
+  };
+
+  this.getAvailableApplications = function getAvailableApplications(appNames) {
+      return nativeScene.getAvailableApplications(appNames);
   };
 
   this.setAppContext = function(appContextName, appContext) {
