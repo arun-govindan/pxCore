@@ -46,6 +46,7 @@ then
   then
     ./ci/release_osx.sh 96.116.56.119 release.tgz 
     checkError $? "unable to send artifacts to 96.116.56.119" "96.116.56.119 down?" "Retry"
+    cat $TRAVIS_BUILD_DIR/logs/*
   fi
 fi
 
