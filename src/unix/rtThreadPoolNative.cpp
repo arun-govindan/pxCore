@@ -65,7 +65,6 @@ void rtThreadPoolNative::destroy()
 {
     mThreadTaskMutex.lock();
     mRunning = false; //mRunning is accessed by other threads
-    mThreadTaskMutex.unlock();
     //broadcast to all the threads that we are shutting down
     mThreadTaskCondition.broadcast();
     for (int i = 0; i < mNumberOfThreads; i++)
@@ -79,6 +78,7 @@ void rtThreadPoolNative::destroy()
         //make another attempt to broadcast to threads 
         mThreadTaskCondition.broadcast();
     }
+    mThreadTaskMutex.unlock();
 }
 
 void rtThreadPoolNative::startThread()
