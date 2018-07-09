@@ -42,11 +42,18 @@ set uploadArtifact=False
 if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
   echo "building edge"
   set uploadArtifact=True
-  call:replaceString "..\examples\pxScene2d\src\win\pxscene.rc"
+  call:replaceString "..\examples\pxScene2d\src\win\pxscene.rc" "Spark_installer.ico" "SparkEdge_installer.ico"
   cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DPXSCENE_VERSION="edge" ..
-  call:replaceString "CPackConfig.cmake"
-  call:replaceString "CPackSourceConfig.cmake"
-)
+  call:replaceString "examples\pxScene2d\src\cmake_install.cmake" "pxscene.exe" "pxsceneEdge.exe"
+  call:replaceString "CPackConfig.cmake" "pxscene.exe" "pxsceneEdge.exe"
+  call:replaceString "CPackSourceConfig.cmake" "pxscene.exe" "pxsceneEdge.exe"
+  call:replaceString "CPackConfig.cmake" ""pxscene"" ""pxsceneEdge""
+  call:replaceString "CPackSourceConfig.cmake" ""pxscene"" ""pxsceneEdge""
+  call:replaceString "CPackConfig.cmake" "pxscene.lnk" "pxsceneEdge.lnk"
+  call:replaceString "CPackSourceConfig.cmake" "pxscene.lnk" "pxsceneEdge.lnk"
+  call:replaceString "CPackConfig.cmake" "Spark_installer.ico" "SparkEdge_installer.ico"
+  call:replaceString "CPackSourceConfig.cmake" "Spark_installer.ico" "SparkEdge_installer.ico"
+  )
 
 for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\src\win\pxscene.rc" ^| findstr "FILEVERSION" ') DO ( 
 			call set verInfo=%%b
@@ -64,6 +71,10 @@ for /f "tokens=1,* delims=]" %%a in ('find /n /v "" ^< "..\examples\pxScene2d\sr
 	
 cmake --build . --config Release -- /m
 if %errorlevel% neq 0 exit /b %errorlevel%
+
+if "%APPVEYOR_SCHEDULED_BUILD%"=="True" (
+move ..\examples\pxScene2d\src\Release\pxscene.exe ..\examples\pxScene2d\src\Release\pxsceneEdge.exe
+)
 
 cpack .
 if %errorlevel% neq 0  (
@@ -89,35 +100,13 @@ if "%uploadArtifact%" == "True" (
         appveyor PushArtifact "build-win32\\_CPack_Packages\\win32\\NSIS\\pxscene-setup.zip" -DeploymentName "portable" -Type "Zip" -Verbosity "Normal"
 )
 
-<<<<<<< HEAD
-:FindReplace <findstr> <replstr> <file>
-set tmp="%temp%\tmp.txt"
-If not exist %temp%\_.vbs call :MakeReplace
-for /f "tokens=*" %%a in ('dir "%3" /s /b /a-d /on') do (
-for /f "usebackq" %%b in (`Findstr /c:"%~1" "%%a"`) do (
-echo(&Echo Replacing "%~1" with "%~2" in file %%~nxa
-<%%a cscript //nologo %temp%\_.vbs "%~1" "%~2">%tmp%
-if exist %tmp% move /Y %tmp% "%%~dpnxa">nul
-)
-)
-del %temp%\_.vbs
-
-:MakeReplace
->%temp%\_.vbs echo with Wscript
->>%temp%\_.vbs echo set args=.arguments
->>%temp%\_.vbs echo .StdOut.Write _
->>%temp%\_.vbs echo Replace(.StdIn.ReadAll,args(0),args(1),1,-1,1)
->>%temp%\_.vbs echo end with
-
-
-=======
 GOTO scriptEnd
 
 :replaceString <fileName>
 set INTEXTFILE=%~1
 set OUTTEXTFILE=%~1.mod
-set SEARCHTEXT=Spark_installer.ico
-set REPLACETEXT=SparkEdge_installer.ico
+set SEARCHTEXT=%~2
+set REPLACETEXT=%~3
 for /f "tokens=1,* delims=¶" %%A in ( '"type %INTEXTFILE%"') do (
     SET string=%%A
         setlocal EnableDelayedExpansion
@@ -132,5 +121,4 @@ for /f "tokens=1,* delims=¶" %%A in ( '"type %INTEXTFILE%"') do (
 goto:eof
 
 :ScriptEnd
-exit 0
->>>>>>> 96c1280c49d10c2a52730e0affaa566e050ed67f
+@rem exit 0
