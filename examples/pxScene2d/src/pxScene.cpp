@@ -286,7 +286,7 @@ protected:
 #endif
     script.collectGarbage();
 
-rtThreadPool::globalInstance()->destroy();    
+//rtThreadPool::globalInstance()->destroy();    
     if (gDumpMemUsage)
     {
       rtLogInfo("pxobjectcount is [%d]",pxObjectCount);

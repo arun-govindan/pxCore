@@ -688,7 +688,7 @@ protected:
 class rtEmitRef: public rtRef<rtEmit>, public rtFunctionBase
 {
 public:
-  rtEmitRef() {}
+  rtEmitRef() {pthread_mutex_init(&mEmitRefLock, NULL);}
   rtEmitRef(rtEmit* e) { asn(e); }
 
   // operator= is not inherited
@@ -696,6 +696,7 @@ public:
 
 private:
   virtual rtError Send(int numArgs,const rtValue* args,rtValue* result);
+  pthread_mutex_t mEmitRefLock;
 };
 
 class rtArrayObject: public rtObject 
