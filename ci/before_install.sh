@@ -64,6 +64,11 @@ then
     brew install ccache
     ls -al $HOME/.ccache
   fi
+  if [ "$TRAVIS_EVENT_TYPE" = "cron" ]
+  then
+    brew install jq
+    brew install wget
+  fi
 fi
 
 #setup lighttpd server
