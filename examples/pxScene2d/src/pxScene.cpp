@@ -286,6 +286,7 @@ protected:
 #endif
     script.collectGarbage();
 
+rtThreadPool::globalInstance()->destroy();    
     if (gDumpMemUsage)
     {
       rtLogInfo("pxobjectcount is [%d]",pxObjectCount);
@@ -299,7 +300,6 @@ protected:
 //       rtLogInfo("texture memory usage is [%ld]",context.currentTextureMemoryUsageInBytes());
 // #endif
     }
-rtThreadPool::globalInstance()->destroy();    
 #ifdef ENABLE_CODE_COVERAGE
     __gcov_flush();
     #endif
