@@ -300,9 +300,14 @@ protected:
 //       rtLogInfo("texture memory usage is [%ld]",context.currentTextureMemoryUsageInBytes());
 // #endif
     }
-    
+   try { 
     rtThreadPool::globalInstance()->destroy(); 
-    rtLogInfo(">>>>>>>>>>>>threadpool destroy complted\n");
+   }
+catch (Exception e)
+{
+	rtLogInfo ("Details of the exceptions : %s\n", e.what());
+}
+ rtLogInfo(">>>>>>>>>>>>threadpool destroy complted\n");
 #ifdef ENABLE_CODE_COVERAGE
     __gcov_flush();
     #endif
@@ -322,6 +327,7 @@ protected:
   virtual void onMouseLeave()
   {
     ENTERSCENELOCK()
+g
     if (mView)
       mView->onMouseLeave();
     EXITSCENELOCK()
