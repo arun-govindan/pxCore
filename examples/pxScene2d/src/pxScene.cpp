@@ -302,6 +302,7 @@ protected:
     }
     
     rtThreadPool::globalInstance()->destroy(); 
+    rtLogInfo(">>>>>>>>>>>>threadpool destroy complted\n");
 #ifdef ENABLE_CODE_COVERAGE
     __gcov_flush();
     #endif
@@ -309,7 +310,7 @@ protected:
       eventLoop.exit();
   EXITSCENELOCK()
   }
-
+rtLogInfo(">>>>>>>>>>>>>>>>event screen lock completed\n");
   virtual void onMouseUp(int32_t x, int32_t y, uint32_t flags)
   {
     ENTERSCENELOCK()
