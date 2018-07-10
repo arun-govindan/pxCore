@@ -309,8 +309,8 @@ protected:
   ENTERSCENELOCK()
       eventLoop.exit();
   EXITSCENELOCK()
+  rtLogInfo(">>>>>>>>>>>>>>>>event screen lock completed\n");
   }
-rtLogInfo(">>>>>>>>>>>>>>>>event screen lock completed\n");
   virtual void onMouseUp(int32_t x, int32_t y, uint32_t flags)
   {
     ENTERSCENELOCK()
