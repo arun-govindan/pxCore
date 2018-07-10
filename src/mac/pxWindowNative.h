@@ -36,6 +36,7 @@ public:
   {
     if (w)
       w->onCreate();
+    printf(">>>>>>>>>>>>>>> : %s : %d\n",__FILE__, __LINE__);
   }
   static void _helper_onCloseRequest(pxWindowNative* w) { if (w) w->onCloseRequest(); }
   static void _helper_onClose(pxWindowNative* w)
