@@ -300,6 +300,8 @@ protected:
 //       rtLogInfo("texture memory usage is [%ld]",context.currentTextureMemoryUsageInBytes());
 // #endif
     }
+    
+    rtThreadPool::globalInstance()->destroy(); 
 #ifdef ENABLE_CODE_COVERAGE
     __gcov_flush();
     #endif
