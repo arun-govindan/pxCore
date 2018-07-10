@@ -3,7 +3,7 @@ if [ "$TRAVIS_EVENT_TYPE" != "cron" ]
 then
 export DEPLOY_DESTINATION=${DEPLOY_DESTINATION:-/var/www/html/releases}
 else
-export DEPLOY_DESTINATION=${DEPLOY_DESTINATION:-/var/www/html/edge/osx}
+export DEPLOY_DESTINATION=${DEPLOY_DESTINATION:-/var/www/html/test/edge/osx}
 fi
 export DEPLOY_USER="${DEPLOY_USER:-ubuntu}"
 REMOTE_HOST="$1"
