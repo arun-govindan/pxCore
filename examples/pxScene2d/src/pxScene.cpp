@@ -30,7 +30,7 @@
 #include "pxScene2d.h"
 #include "rtUrlUtils.h"
 #include "rtScript.h"
-
+#include <exception>
 #include "pxUtil.h"
 #include "rtSettings.h"
 
@@ -303,7 +303,7 @@ protected:
    try { 
     rtThreadPool::globalInstance()->destroy(); 
    }
-catch (Exception e)
+catch (std::exception e)
 {
 	rtLogInfo ("Details of the exceptions : %s\n", e.what());
 }
@@ -327,7 +327,6 @@ catch (Exception e)
   virtual void onMouseLeave()
   {
     ENTERSCENELOCK()
-g
     if (mView)
       mView->onMouseLeave();
     EXITSCENELOCK()
