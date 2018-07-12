@@ -24,7 +24,7 @@ limitations under the License.
 #include "../pxTimer.h"
 #include "../pxWindowUtil.h"
 #include "pxKeycodes.h"
-
+#include "rtLog.h"
 #include "pxConfigNative.h"
 
 #include <stdlib.h>
@@ -740,6 +740,7 @@ static bool gTimerSet = false;
 
 void pxWindowNative::runEventLoop()
 {
+rtLogInfo(">>>>>>>>>>>>>>>>event loop trace : %s : %d\n",__FUNCTION__,__LINE__);
 //glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
   glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 
@@ -779,6 +780,7 @@ void pxWindowNative::exitEventLoop()
 //#else
     // exit(0);
 //#endif
+rtLogInfo(">>>>>>>>>>>>>>>>event loop trace : %s : %d\n",__FUNCTION__,__LINE__);
 }
 
 #if 0
