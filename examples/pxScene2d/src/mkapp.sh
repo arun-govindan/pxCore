@@ -49,7 +49,6 @@ cp macstuff/Info.plist $bundle/Contents
 # Copy RESOURCES to Bundle...
 #
 cp -a browser $bundleRes
-rm $bundleRes/browser/images/status_bg_edge.svg
 cp FreeSans.ttf $bundleRes
 cp sparkpermissions.conf $bundleRes
 
