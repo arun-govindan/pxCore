@@ -6,7 +6,7 @@ minJS=./jsMin.sh  #minify
 externalDir=../external
 if [ "$TRAVIS_EVENT_TYPE" == "cron" ]
 then
-bundle=pxsceneEdge.app
+bundle=pxscene.app
 else
 bundle=pxscene.app
 fi
@@ -55,8 +55,7 @@ cp sparkpermissions.conf $bundleRes
 cp package.json $bundleRes
 if [ "$TRAVIS_EVENT_TYPE" == "cron" ]  
 then
-echo "************ building edge"
-cp pxscene $bundleBin/pxsceneEdge
+cp pxscene $bundleBin
 else
 cp pxscene $bundleBin
 fi

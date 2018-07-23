@@ -23,8 +23,8 @@ mkdir -p $DEPLOY_DIR
 rm -r $DEPLOY_DIR/pxscene.app
 if [ "$TRAVIS_EVENT_TYPE" == "cron" ]
 then
-cp -a pxsceneEdge.app $DEPLOY_DIR
-echo $PX_SCENE_VERSION > $DEPLOY_DIR/pxsceneEdge.app/Contents/MacOS/version
+cp -a pxscene.app $DEPLOY_DIR
+echo $PX_SCENE_VERSION > $DEPLOY_DIR/pxscene.app/Contents/MacOS/version
 else
 cp -a pxscene.app $DEPLOY_DIR
 echo $PX_SCENE_VERSION > $DEPLOY_DIR/pxscene.app/Contents/MacOS/version
