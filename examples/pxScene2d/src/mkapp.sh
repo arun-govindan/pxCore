@@ -6,8 +6,10 @@ minJS=./jsMin.sh  #minify
 externalDir=../external
 if [ "$TRAVIS_EVENT_TYPE" == "cron" ]
 then
+echo "----------------> cron" 
 bundle=pxscene.app
 else
+echo "----------------> cron fail" 
 bundle=pxscene.app
 fi
 bundleBin=$bundle/Contents/MacOS
@@ -55,16 +57,14 @@ cp sparkpermissions.conf $bundleRes
 cp package.json $bundleRes
 if [ "$TRAVIS_EVENT_TYPE" == "cron" ]  
 then
+echo "----------------> cron" 
 cp pxscene $bundleBin
 else
+echo "----------------> cron fail" 
 cp pxscene $bundleBin
 fi
 
 
-if [ "$TRAVIS_EVENT_TYPE" == "cron" ]  
-then
-sed -i -e 's/\.\/pxscene/\.\/pxsceneEdge/g' macstuff/pxscene.sh
-fi
 cp macstuff/pxscene.sh $bundleBin
 cp macstuff/EngineRunner $bundleBin
 

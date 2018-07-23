@@ -148,7 +148,8 @@ createDMG() {
   BACKGROUND_CLAUSE="set background picture of opts to file \".background:${BACKGROUND_FILE_NAME}\""
   REPOSITION_HIDDEN_FILES_CLAUSE="set position of every item to {theBottomRightX + 100, 100}"
   if [ "$TRAVIS_EVENT_TYPE" == "cron" ]
-  then  
+  then 
+echo "----------------> cron" 
     POSITION_CLAUSE="${POSITION_CLAUSE}set position of item \"pxscene.app\" to {240, 140}"
   else
     POSITION_CLAUSE="${POSITION_CLAUSE}set position of item \"pxscene.app\" to {240, 140}"
