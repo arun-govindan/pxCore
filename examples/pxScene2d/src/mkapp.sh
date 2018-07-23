@@ -55,7 +55,6 @@ cp sparkpermissions.conf $bundleRes
 cp package.json $bundleRes
 if [ "$TRAVIS_EVENT_TYPE" == "cron" ]  
 then
-echo "************ building edge"
 cp pxscene $bundleBin/pxsceneEdge
 else
 cp pxscene $bundleBin
