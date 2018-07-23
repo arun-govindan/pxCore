@@ -49,17 +49,7 @@ then
   then
     cmake -DBUILD_PX_TESTS=ON -DBUILD_PXSCENE_STATIC_LIB=ON -DBUILD_DEBUG_METRICS=ON .. >>$BUILDLOGS 2>&1;
   else
-    if [ "$TRAVIS_EVENT_TYPE" == "cron" ] ; 
-    then
-      cp ../examples/pxScene2d/src/macstuff/Resources/SparkEdge.icns ../examples/pxScene2d/src/macstuff/Resources/pxscene.icns
-      cp ../examples/pxScene2d/src/macstuff/Resources/SparkEdge.icns ../examples/pxScene2d/src/macstuff/Resources/AppIcon.icns
-      cp ../examples/pxScene2d/src/macstuff/Resources/SparkEdge.icns ../examples/pxScene2d/src/macstuff/dmgresources/pxscene.icns
-      cp ../examples/pxScene2d/src/browser/images/status_bg_edge.svg ../examples/pxScene2d/src/browser/images/status_bg.svg
-       
-      cmake -DPXSCENE_VERSION="edge" .. >>$BUILDLOGS 2>&1;
-    else
       cmake .. >>$BUILDLOGS 2>&1;
-    fi
   fi
 
   checkError $? 0 "cmake config failed" "Config error" "Check the error in $BUILDLOGS"
