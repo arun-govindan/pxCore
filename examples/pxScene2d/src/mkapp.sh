@@ -4,12 +4,7 @@
 minJS=./jsMin.sh  #minify
 
 externalDir=../external
-if [ "$TRAVIS_EVENT_TYPE" == "cron" ]
-then
-bundle=pxsceneEdge.app
-else
 bundle=pxscene.app
-fi
 bundleBin=$bundle/Contents/MacOS
 
 #bundleRes=$bundle/Contents/Resources
@@ -53,18 +48,9 @@ cp FreeSans.ttf $bundleRes
 cp sparkpermissions.conf $bundleRes
 
 cp package.json $bundleRes
-if [ "$TRAVIS_EVENT_TYPE" == "cron" ]  
-then
-cp pxscene $bundleBin/pxsceneEdge
-else
 cp pxscene $bundleBin
-fi
 
 
-if [ "$TRAVIS_EVENT_TYPE" == "cron" ]  
-then
-sed -i -e 's/\.\/pxscene/\.\/pxsceneEdge/g' macstuff/pxscene.sh
-fi
 cp macstuff/pxscene.sh $bundleBin
 cp macstuff/EngineRunner $bundleBin
 
