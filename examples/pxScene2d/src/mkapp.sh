@@ -51,7 +51,6 @@ cp package.json $bundleRes
 cp pxscene $bundleBin
 
 
-sed -i -e 's/\.\/pxscene/\.\/pxsceneEdge/g' macstuff/pxscene.sh
 cp macstuff/pxscene.sh $bundleBin
 cp macstuff/EngineRunner $bundleBin
 
