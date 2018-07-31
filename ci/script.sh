@@ -31,7 +31,7 @@ checkError()
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]
 then
-  if  [ "$TRAVIS_EVENT_TYPE" = "api" ]
+  if  [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ]
     then
     echo "Ignoring script stage for $TRAVIS_EVENT_TYPE event";
     exit 0
@@ -83,7 +83,7 @@ else
   sh build_px.sh "build_$TRAVIS_OS_NAME.sh"
 fi
 
-if [ "$TRAVIS_EVENT_TYPE" = "api" ] ;
+if [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] ;
 then
   cp $TRAVIS_BUILD_DIR/examples/pxScene2d/src/deploy/mac/*.dmg $TRAVIS_BUILD_DIR/artifacts/.
   checkError $? "Copying dmg file failed" "Could be build problem or file not generated" "Analyze build logs"

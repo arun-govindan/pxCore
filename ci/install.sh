@@ -17,7 +17,7 @@ checkError()
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]
 then
-    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ]
+    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ]
     then
       echo "Ignoring install stage for $TRAVIS_EVENT_TYPE event";
       exit 0
@@ -36,7 +36,7 @@ then
   checkError $? "unable to create exec logs file" "could be permission issue" "Retry trigerring travis build"
 fi
 
-if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] ;
+if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] ;
 then
   mkdir $TRAVIS_BUILD_DIR/artifacts
   checkError $? "unable to create directory artifacts" "could be permission issue" "Retry triggering travis build"

@@ -14,9 +14,16 @@ checkError()
   fi
 }
 
+#if [ "$TRAVIS_TAG" != "" ]
+#then
+#  echo "-------------tag build"
+#else
+#  echo "-------------not a tag build"
+#fi
+
 if [ "$TRAVIS_OS_NAME" = "linux" ]
 then
-    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ]
+    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ]
     then
       echo "Ignoring after script stage for $TRAVIS_EVENT_TYPE event";
       exit 0;
@@ -32,7 +39,7 @@ then
   checkError $? "Unable to send log files to 96.116.56.119" "Possible reason - Server could be down" "Retry"
 fi
 
-if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] ;
+if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ];
 then
   mkdir release
   checkError $? "unable to create release directory" "Could be permission issue?" "Retry"
@@ -42,11 +49,8 @@ then
   checkError $? "unable to move artifacts folder to release directory" "artifacts directory created" "Retry"
   tar -cvzf release.tgz release/*
   checkError $? "unable to compress release folder" "release folder present?" "Retry"
-  if [ "$TRAVIS_REPO_SLUG" = "pxscene/pxCore" ] && [ "$TRAVIS_BRANCH" = "master" ] ;
-  then
     ./ci/release_osx.sh 96.116.56.119 release.tgz 
     checkError $? "unable to send artifacts to 96.116.56.119" "96.116.56.119 down?" "Retry"
-  fi
 fi
 
 if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ;
@@ -55,7 +59,7 @@ then
 fi
 
 #update release  notes and info.plist in github
-if [ "$TRAVIS_EVENT_TYPE" = "api" ] && [ "$UPDATE_VERSION" = "true" ] ;
+if ( [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] ) && [ "$UPDATE_VERSION" = "true" ] ;
 then
    git checkout master
    checkError $? "unable to checkout master branch in pxscene" "" "check the credentials"
