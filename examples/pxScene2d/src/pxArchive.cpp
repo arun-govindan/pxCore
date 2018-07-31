@@ -65,6 +65,7 @@ void pxArchive::setupArchive()
     mLoadStatus.set("statusCode", mDownloadStatusCode);
     // TODO rtValue doesn't like longs... rtValue and fix downloadRequest
     mLoadStatus.set("httpStatusCode", mHttpStatusCode);
+    mLoadStatus.set("errorString", mErrorString);
 
     if (mDownloadStatusCode == 0) {
       mData.init((uint8_t *) mArchiveData, mArchiveDataSize);
@@ -78,11 +79,12 @@ void pxArchive::setupArchive()
   mArchiveDataMutex.unlock();
 }
 
-void pxArchive::setArchiveData(int downloadStatusCode, uint32_t httpStatusCode, const char* data, const size_t dataSize)
+void pxArchive::setArchiveData(int downloadStatusCode, uint32_t httpStatusCode, const char* data, const size_t dataSize, const rtString& errorString)
 {
   mArchiveDataMutex.lock();
   mDownloadStatusCode = downloadStatusCode;
   mHttpStatusCode = httpStatusCode;
+  mErrorString = errorString;
   if (mArchiveData != NULL)
   {
     delete [] mArchiveData;
@@ -102,7 +104,7 @@ void pxArchive::setArchiveData(int downloadStatusCode, uint32_t httpStatusCode, 
   mArchiveDataMutex.unlock();
 }
 
-rtError pxArchive::initFromUrl(const rtString& url, const rtString& origin)
+rtError pxArchive::initFromUrl(const rtString& url, const rtCORSRef& cors)
 {
   mReady = new rtPromise;
   mLoadStatus = new rtMapObject;
@@ -119,7 +121,7 @@ rtError pxArchive::initFromUrl(const rtString& url, const rtString& origin)
     mLoadStatus.set("sourceType", "http");
     mLoadStatus.set("statusCode", -1);
     mDownloadRequest = new rtFileDownloadRequest(url, this, pxArchive::onDownloadComplete);
-    mDownloadRequest->setOrigin(origin.cString());
+    mDownloadRequest->setCORS(cors);
     mDownloadRequest->setCallbackFunctionThreadSafe(pxArchive::onDownloadComplete);
     mUseDownloadedData = true;
     rtFileDownloader::instance()->addToDownloadQueue(mDownloadRequest);
@@ -239,7 +241,8 @@ void pxArchive::onDownloadComplete(rtFileDownloadRequest* downloadRequest)
   if (a != NULL)
   {
     a->setArchiveData(downloadRequest->downloadStatusCode(), (uint32_t)downloadRequest->httpStatusCode(),
-                      downloadRequest->downloadedData(), downloadRequest->downloadedDataSize());
+                      downloadRequest->downloadedData(), downloadRequest->downloadedDataSize(),
+                      downloadRequest->errorString());
 
     if (gUIThreadQueue)
     {
