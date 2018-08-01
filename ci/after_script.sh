@@ -39,7 +39,7 @@ then
   checkError $? "Unable to send log files to 96.116.56.119" "Possible reason - Server could be down" "Retry"
 fi
 
-if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ];
+if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ]
 then
   echo "-------------------TRAVIS_TAG : $TRAVIS_TAG"
   mkdir release
@@ -60,7 +60,7 @@ then
 fi
 
 #update release  notes and info.plist in github
-if ( [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] ) && [ "$UPDATE_VERSION" = "true" ] ;
+if ( [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] ) && [ "$UPDATE_VERSION" = "true" ] 
 then
      echo "-------------------TRAVIS_TAG : $TRAVIS_TAG" 
    git checkout master

@@ -83,7 +83,7 @@ else
   sh build_px.sh "build_$TRAVIS_OS_NAME.sh"
 fi
 
-if [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] ;
+if [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] 
 then
 echo "-------------------TRAVIS_TAG : $TRAVIS_TAG"
   cp $TRAVIS_BUILD_DIR/examples/pxScene2d/src/deploy/mac/*.dmg $TRAVIS_BUILD_DIR/artifacts/.
