@@ -32,7 +32,7 @@ fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-if [ "$TRAVIS_EVENT_TYPE" != "cron" ] && [ "$TRAVIS_EVENT_TYPE" != "api" ] || [ "$TRAVIS_TAG" == "" ] ;
+if [ "$TRAVIS_EVENT_TYPE" != "cron" ] && [ "$TRAVIS_EVENT_TYPE" != "api" ] && [ "$TRAVIS_TAG" == "" ] ;
 then
 echo "-------------------FAILED TRAVIS_TAG : $TRAVIS_TAG"
   export CODE_COVERAGE=1

@@ -48,7 +48,7 @@ then
 fi
 
 
-if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ] ;
+if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ] 
 then
   if [ "$TRAVIS_OS_NAME" = "linux" ]; 
   then 
@@ -62,7 +62,7 @@ retval=0
 ulimit -c unlimited
 export DUMP_STACK_ON_EXCEPTION=1
 cd $TRAVIS_BUILD_DIR/ci
-if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ] ;
+if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ] 
 then
   sh build_px.sh 
   checkError $? "#### Build/unittests/execution [build_px.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
