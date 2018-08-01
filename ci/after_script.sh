@@ -23,7 +23,7 @@ checkError()
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]
 then
-    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ]
+    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ ! -z "${TRAVIS_TAG}" ]
     then
       echo "Ignoring after script stage for $TRAVIS_EVENT_TYPE event";
       exit 0;
@@ -31,7 +31,7 @@ then
 fi
 
 cd $TRAVIS_BUILD_DIR
-if [ "$TRAVIS_EVENT_TYPE" = "push" ] && [ "$TRAVIS_TAG" == "" ] 
+if [ "$TRAVIS_EVENT_TYPE" = "push" ] && [ -z "${TRAVIS_TAG}" ] 
 then
   tar -cvzf logs.tgz logs/*
   checkError $? "Unable to compress logs folder" "Check for any previous tasks failed" "Retry"
@@ -39,7 +39,7 @@ then
   checkError $? "Unable to send log files to 96.116.56.119" "Possible reason - Server could be down" "Retry"
 fi
 
-if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ]
+if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ ! -z "${TRAVIS_TAG}" ]
 then
   echo "-------------------TRAVIS_TAG : $TRAVIS_TAG"
   mkdir release
@@ -54,7 +54,7 @@ then
     checkError $? "unable to send artifacts to 96.116.56.119" "96.116.56.119 down?" "Retry"
 fi
 
-if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ] 
+if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ -z "${TRAVIS_TAG}" ] 
 then
   ccache -s
 fi

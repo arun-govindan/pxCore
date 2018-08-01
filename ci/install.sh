@@ -17,7 +17,7 @@ checkError()
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]
 then
-    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ]
+    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ ! -z "${TRAVIS_TAG}" ]
     then
 echo "------------------- FAILED TRAVIS_TAG : $TRAVIS_TAG"
       echo "Ignoring install stage for $TRAVIS_EVENT_TYPE event";
@@ -29,7 +29,7 @@ mkdir $TRAVIS_BUILD_DIR/logs
 touch $TRAVIS_BUILD_DIR/logs/build_logs
 BUILDLOGS=$TRAVIS_BUILD_DIR/logs/build_logs
 
-if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ]  
+if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ -z "${TRAVIS_TAG}" ]  
 then
   mkdir $TRAVIS_BUILD_DIR/logs/codecoverage
   checkError $? "unable to create codecoverage file" "could be permission issue" "Retry trigerring travis build"
@@ -37,7 +37,7 @@ then
   checkError $? "unable to create exec logs file" "could be permission issue" "Retry trigerring travis build"
 fi
 
-if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] 
+if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ ! -z "${TRAVIS_TAG}" ] 
 then
 echo "-------------------TRAVIS_TAG : $TRAVIS_TAG"
   mkdir $TRAVIS_BUILD_DIR/artifacts
