@@ -48,7 +48,7 @@ then
 fi
 
 
-if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ;
+if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ] ;
 then
   if [ "$TRAVIS_OS_NAME" = "linux" ]; 
   then 
@@ -62,7 +62,7 @@ retval=0
 ulimit -c unlimited
 export DUMP_STACK_ON_EXCEPTION=1
 cd $TRAVIS_BUILD_DIR/ci
-if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ;
+if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ] ;
 then
   sh build_px.sh 
   checkError $? "#### Build/unittests/execution [build_px.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
@@ -85,6 +85,7 @@ fi
 
 if [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] ;
 then
+echo "-------------------TRAVIS_TAG : $TRAVIS_TAG"
   cp $TRAVIS_BUILD_DIR/examples/pxScene2d/src/deploy/mac/*.dmg $TRAVIS_BUILD_DIR/artifacts/.
   checkError $? "Copying dmg file failed" "Could be build problem or file not generated" "Analyze build logs"
   cp $TRAVIS_BUILD_DIR/examples/pxScene2d/src/deploy/mac/software_update.plist $TRAVIS_BUILD_DIR/artifacts/.

@@ -31,7 +31,7 @@ then
 fi
 
 cd $TRAVIS_BUILD_DIR
-if [ "$TRAVIS_EVENT_TYPE" = "push" ] ;
+if [ "$TRAVIS_EVENT_TYPE" = "push" ] && [ "$TRAVIS_TAG" == "" ] 
 then
   tar -cvzf logs.tgz logs/*
   checkError $? "Unable to compress logs folder" "Check for any previous tasks failed" "Retry"
@@ -41,6 +41,7 @@ fi
 
 if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ];
 then
+  echo "-------------------TRAVIS_TAG : $TRAVIS_TAG"
   mkdir release
   checkError $? "unable to create release directory" "Could be permission issue?" "Retry"
   mv logs release/.
@@ -53,7 +54,7 @@ then
     checkError $? "unable to send artifacts to 96.116.56.119" "96.116.56.119 down?" "Retry"
 fi
 
-if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ;
+if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ] 
 then
   ccache -s
 fi
@@ -61,6 +62,7 @@ fi
 #update release  notes and info.plist in github
 if ( [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] ) && [ "$UPDATE_VERSION" = "true" ] ;
 then
+     echo "-------------------TRAVIS_TAG : $TRAVIS_TAG" 
    git checkout master
    checkError $? "unable to checkout master branch in pxscene" "" "check the credentials"
    export linenumber=`awk '/CFBundleShortVersionString/{ print NR; exit }' $TRAVIS_BUILD_DIR/examples/pxScene2d/src/macstuff/Info.plist`

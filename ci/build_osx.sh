@@ -34,6 +34,7 @@ fi
 
 if [ "$TRAVIS_EVENT_TYPE" != "cron" ] && [ "$TRAVIS_EVENT_TYPE" != "api" ] || [ "$TRAVIS_TAG" == "" ] ;
 then
+echo "-------------------FAILED TRAVIS_TAG : $TRAVIS_TAG"
   export CODE_COVERAGE=1
   export USE_HTTP_CACHE=1
 fi
@@ -47,6 +48,7 @@ then
   echo "***************************** Generating config files ****" >> $BUILDLOGS
   if [ "$TRAVIS_EVENT_TYPE" != "cron" ] && [ "$TRAVIS_EVENT_TYPE" != "api" ] && [ "$TRAVIS_TAG" == "" ] ;
   then
+echo "-------------------FAILED TRAVIS_TAG : $TRAVIS_TAG"
     cmake -DBUILD_PX_TESTS=ON -DBUILD_PXSCENE_STATIC_LIB=ON -DBUILD_DEBUG_METRICS=ON -DPXSCENE_TEST_HTTP_CACHE=ON .. >>$BUILDLOGS 2>&1;
   else
     if [ "$TRAVIS_EVENT_TYPE" == "cron" ] ; 
@@ -92,6 +94,7 @@ if [ "$TRAVIS_PULL_REQUEST" = "false" ]
         
   if [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ "$TRAVIS_TAG" != "" ] ;
   then
+echo "-------------------TRAVIS_TAG : $TRAVIS_TAG"
     cd $TRAVIS_BUILD_DIR/examples/pxScene2d/src/
 
     if [[ ! -z $PX_VERSION ]]

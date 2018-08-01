@@ -56,7 +56,7 @@ fi
 #install lighttpd, code coverage binaries for mac
 if [ "$TRAVIS_OS_NAME" = "osx" ] ; 
 then
-  if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]
+  if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ]
   then
 #    brew install lighttpd
     brew install gcovr
@@ -107,7 +107,7 @@ fi
 
 
 #install codecov
-if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]
+if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ "$TRAVIS_TAG" == "" ]
 then
 	if [ "$TRAVIS_OS_NAME" = "osx" ] ; 
 	then
