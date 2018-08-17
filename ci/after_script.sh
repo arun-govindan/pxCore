@@ -42,12 +42,9 @@ then
   checkError $? "unable to move artifacts folder to release directory" "artifacts directory created" "Retry"
   tar -cvzf release.tgz release/*
   checkError $? "unable to compress release folder" "release folder present?" "Retry"
-  if [ "$TRAVIS_BRANCH" = "master" ] ;
-  then
     ./ci/release_osx.sh 96.116.56.119 release.tgz 
     checkError $? "unable to send artifacts to 96.116.56.119" "96.116.56.119 down?" "Retry"
     cat $TRAVIS_BUILD_DIR/logs/*
-  fi
 fi
 
 if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ -z "${TRAVIS_TAG}" ] 
