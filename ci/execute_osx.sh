@@ -43,12 +43,7 @@ export SPARK_ENABLE_COLLECT_GARBAGE=1
 
 EXECLOGS=$TRAVIS_BUILD_DIR/logs/exec_logs
 LEAKLOGS=$TRAVIS_BUILD_DIR/logs/leak_logs
-<<<<<<< HEAD
-TESTRUNNERURL="https://www.pxscene.org/examples/px-reference/test-run/testRunner_v5.js"
-
-=======
 TESTRUNNERURL="https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/testRunner_v5.2.js"
->>>>>>> bfeee2f6120f852f0ac5869167bc0567ab63f2ac
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 printExecLogs()
