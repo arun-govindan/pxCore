@@ -34,6 +34,7 @@ init:
   - echo environment setup...
   - git config --system core.longpaths true
   - ps: "ls \"C:/\""
+install:
   - ps: Add-AppveyorMessage -Message "APPVEYOR_FORCED_BUILD: $(!!$env:APPVEYOR_FORCED_BUILD)"
 before_build:
   - cd %S%
