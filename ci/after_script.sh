@@ -26,7 +26,7 @@ fi
 cd $TRAVIS_BUILD_DIR
 if [ "$TRAVIS_EVENT_TYPE" = "push" ] && [ -z "${TRAVIS_TAG}" ] 
 then
-  tar -cvzf logs.tgz logs/*
+  tar -czf logs.tgz logs/*
   checkError $? "Unable to compress logs folder" "Check for any previous tasks failed" "Retry"
   ./ci/deploy_files.sh 96.116.56.119 logs.tgz;
   checkError $? "Unable to send log files to 96.116.56.119" "Possible reason - Server could be down" "Retry"

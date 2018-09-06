@@ -14,7 +14,7 @@ SSH="ssh -tt -o StrictHostKeyChecking=no -p 2220 -l ${DEPLOY_USER} ${REMOTE_HOST
 $SSH "set -e;
 sudo mkdir $REMOTE_DIR
 cd $REMOTE_TEMPDIR
-sudo tar -C $REMOTE_DIR -xvzf ${filename};
+sudo tar -C $REMOTE_DIR -xzf ${filename};
 sudo mv $REMOTE_DIR/logs/* $REMOTE_DIR/.
 sudo rm -rf $REMOTE_DIR/logs
 sudo rm -rf ${REMOTE_TEMPDIR}
