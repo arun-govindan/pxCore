@@ -35,6 +35,8 @@
  * OpenLDAP library versions, USE_OPENLDAP shall not be defined.
  */
 
+//testing
+
 #ifdef CURL_LDAP_WIN            /* Use Windows LDAP implementation. */
 # include <winldap.h>
 # ifndef LDAP_VENDOR_NAME
