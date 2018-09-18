@@ -258,7 +258,7 @@ class pxScene2dTest : public testing::Test
    
    void pxScene2dHdrTest ()
    {
-      mUrl = "test_OSCILLATE.js";
+  /*    mUrl = "test_OSCILLATE.js";
       mView = new pxScriptView(mUrl,"");
       process(5.0);
       rtObjectRef   scene = mView->mScene;
@@ -293,7 +293,7 @@ class pxScene2dTest : public testing::Test
       EXPECT_TRUE ( RT_OK == mRoot->rz(getFloatVal));
       EXPECT_TRUE ( RT_OK == mRoot->painting(getBoolVal));
       EXPECT_TRUE ( RT_OK == mRoot->clip(getBoolVal));
-  /*    EXPECT_TRUE ( RT_OK == mRoot->setMask(true));
+      EXPECT_TRUE ( RT_OK == mRoot->setMask(true));
       EXPECT_TRUE ( RT_OK == mRoot->mask(getBoolVal));
       EXPECT_TRUE ( RT_OK == mRoot->setDrawEnabled(true));
       EXPECT_TRUE ( RT_OK == mRoot->drawEnabled(getBoolVal));
