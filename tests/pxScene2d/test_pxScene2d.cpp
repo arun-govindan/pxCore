@@ -267,7 +267,7 @@ class pxScene2dTest : public testing::Test
 
       mRoot = sceneptr->getRoot(); 
       
-      rtString getStringVal = "";
+ /*     rtString getStringVal = "";
       int32_t getIntVal = 0 ;
       bool getBoolVal = false ;
       float getFloatVal = 0.0;
@@ -275,7 +275,7 @@ class pxScene2dTest : public testing::Test
 
       EXPECT_TRUE ( RT_OK == mRoot->id(getStringVal));
       EXPECT_TRUE ( RT_OK == mRoot->interactive(getBoolVal));
-  /*    mRoot->w();
+     mRoot->w();
       mRoot->h();
       EXPECT_TRUE ( RT_OK == mRoot->setPX(2.0));
       EXPECT_TRUE ( RT_OK == mRoot->px(getFloatVal));
