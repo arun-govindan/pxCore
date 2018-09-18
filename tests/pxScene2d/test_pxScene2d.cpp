@@ -293,24 +293,24 @@ class pxScene2dTest : public testing::Test
       EXPECT_TRUE ( RT_OK == mRoot->rz(getFloatVal));
       EXPECT_TRUE ( RT_OK == mRoot->painting(getBoolVal));
       EXPECT_TRUE ( RT_OK == mRoot->clip(getBoolVal));
-      EXPECT_TRUE ( RT_OK == mRoot->setMask(true));
+  /*    EXPECT_TRUE ( RT_OK == mRoot->setMask(true));
       EXPECT_TRUE ( RT_OK == mRoot->mask(getBoolVal));
       EXPECT_TRUE ( RT_OK == mRoot->setDrawEnabled(true));
       EXPECT_TRUE ( RT_OK == mRoot->drawEnabled(getBoolVal));
       EXPECT_TRUE ( RT_OK == mRoot->setHitTest(true));
       EXPECT_TRUE ( RT_OK == mRoot->hitTest(getBoolVal));
       EXPECT_TRUE ( RT_OK == mRoot->focus(getBoolVal)); 
- 
+*/ 
       rtRef<pxObject> f, t;
       pxMatrix4f m;
       float getFloat = 0.0;
       bool getBool = false;
-      /*pxObject::getMatrixFromObjectToObject(mRoot, t, m); 
+      pxObject::getMatrixFromObjectToObject(mRoot, t, m); 
       pxVector4f vf, vt;
       pxObject::transformPointFromObjectToScene(f, vf, vt);
       pxObject::transformPointFromSceneToObject(f, vf, vt);
       pxObject::transformPointFromObjectToObject(f, t, vf, vt);
-      */
+      
       EXPECT_TRUE ( RT_OK == mRoot->setM11(1.0));
       EXPECT_TRUE ( RT_OK == mRoot->m11(getFloat));
       EXPECT_TRUE ( 1.0 == getFloat);
