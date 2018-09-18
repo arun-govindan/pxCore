@@ -300,7 +300,7 @@ class pxScene2dTest : public testing::Test
       EXPECT_TRUE ( RT_OK == mRoot->setHitTest(true));
       EXPECT_TRUE ( RT_OK == mRoot->hitTest(getBoolVal));
       EXPECT_TRUE ( RT_OK == mRoot->focus(getBoolVal)); 
-*/ 
+ 
       rtRef<pxObject> f, t;
       pxMatrix4f m;
       float getFloat = 0.0;
@@ -361,7 +361,7 @@ class pxScene2dTest : public testing::Test
       EXPECT_TRUE ( 16.0 == getFloat);
       EXPECT_TRUE ( RT_OK == mRoot->setUseMatrix (true));
       EXPECT_TRUE ( RT_OK == mRoot->useMatrix(getBool));
-      EXPECT_TRUE ( true == getBool );
+      EXPECT_TRUE ( true == getBool );*/
   }
 
   void pxScriptViewTest()
