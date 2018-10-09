@@ -15,8 +15,10 @@ matrix:
   - os: osx
     osx_image: xcode9.4
     matrix:
-      - env: USE_V8=ON
-      - env: USE_V8=OFF
+      env: 
+        - USE_V8=ON
+      env:
+        - USE_V8=OFF
 language: c++
 before_install:
 - eval "${MATRIX_EVAL}"
