@@ -71,7 +71,6 @@
 
 #include "rtServiceProvider.h"
 #include "rtSettings.h"
-
 #ifdef RUNINMAIN
 #define ENTERSCENELOCK()
 #define EXITSCENELOCK() 
@@ -445,6 +444,7 @@ public:
   virtual void update(double t);
   virtual void releaseData(bool sceneSuspended);
   virtual void reloadData(bool sceneSuspended);
+  virtual uint64_t textureMemoryUsage();
 
   // non-destructive applies transform on top of of provided matrix
   virtual void applyMatrix(pxMatrix4f& m)
@@ -507,8 +507,11 @@ public:
       float dy = -(mpy * mh);
       
       // translate based on xy rotate/scale based on cx, cy
-      m.translate(mx + mcx + dx, my + mcy + dy);
-      
+      bool doTransToOrig = msx != 1.0 || msy != 1.0 || mr;
+      if (doTransToOrig)
+          m.translate(mx + mcx + dx, my + mcy + dy);
+      else
+          m.translate(mx + dx, my + dy);
       if (mr)
       {
         m.rotateInDegrees(mr
@@ -518,7 +521,8 @@ public:
         );
       }
       if (msx != 1.0 || msy != 1.0) m.scale(msx, msy);
-      m.translate(-mcx, -mcy);
+      if (doTransToOrig)
+          m.translate(-mcx, -mcy);
 #else
       // translate/rotate/scale based on cx, cy
       m.translate(mx, my);
@@ -750,7 +754,7 @@ protected:
   bool mRepaint;
   #ifdef PX_DIRTY_RECTANGLES
   bool mIsDirty;
-  pxMatrix4f mLastRenderMatrix;
+  pxMatrix4f mRenderMatrix;
   pxRect mScreenCoordinates;
   pxRect mDirtyRect;
   #endif //PX_DIRTY_RECTANGLES
@@ -1064,6 +1068,7 @@ public:
   virtual void* getInterface(const char* name);
   virtual void releaseData(bool sceneSuspended);
   virtual void reloadData(bool sceneSuspended);
+  virtual uint64_t textureMemoryUsage();
   
 private:
   rtRef<pxScriptView> mScriptView;
@@ -1174,6 +1179,7 @@ public:
 
   rtError suspend(const rtValue& v, bool& b);
   rtError resume(const rtValue& v, bool& b);
+  rtError textureMemoryUsage(rtValue& v);
   
 protected:
 
@@ -1332,6 +1338,7 @@ public:
   rtMethod1ArgAndReturn("suspend", suspend, rtValue, bool);
   rtMethod1ArgAndReturn("resume", resume, rtValue, bool);
   rtMethodNoArgAndReturn("suspended", suspended, bool);
+  rtMethodNoArgAndReturn("textureMemoryUsage", textureMemoryUsage, rtValue);
 /*
   rtMethod1ArgAndReturn("createExternal", createExternal, rtObjectRef,
                         rtObjectRef);
@@ -1369,10 +1376,12 @@ public:
   rtReadOnlyProperty(alignVertical,alignVertical,rtObjectRef);
   rtReadOnlyProperty(alignHorizontal,alignHorizontal,rtObjectRef);
   rtReadOnlyProperty(truncation,truncation,rtObjectRef);
-  rtMethod1ArgAndReturn("sparkSetting", sparkSetting, rtString, rtValue);
+
+  rtReadOnlyProperty(origin, origin, rtString);
 
   rtMethodNoArgAndNoReturn("dispose",dispose);
 
+  rtMethod1ArgAndReturn("sparkSetting", sparkSetting, rtString, rtValue);
   rtMethod1ArgAndNoReturn("addServiceProvider", addServiceProvider, rtFunctionRef);
   rtMethod1ArgAndNoReturn("removeServiceProvider", removeServiceProvider, rtFunctionRef);
 
@@ -1475,6 +1484,7 @@ public:
   rtError suspend(const rtValue& v, bool& b);
   rtError resume(const rtValue& v, bool& b);
   rtError suspended(bool &b);
+  rtError textureMemoryUsage(rtValue &v);
 
   rtError addListener(rtString eventName, const rtFunctionRef& f)
   {
@@ -1527,6 +1537,7 @@ public:
   rtCORSRef cors() const { return mCORS; }
   rtError cors(rtObjectRef& v) const { v = mCORS; return RT_OK; }
   rtError sparkSetting(const rtString& setting, rtValue& value) const;
+  rtError origin(rtString& v) const { v = mOrigin; return RT_OK; }
 
   void setMouseEntered(rtRef<pxObject> o);//setMouseEntered(pxObject* o);
 
@@ -1697,6 +1708,7 @@ private:
   bool mPointerHidden;
   std::vector<rtObjectRef> mInnerpxObjects;
   rtFunctionRef mCustomAnimator;
+  rtString mOrigin;
 #ifdef ENABLE_PERMISSIONS_CHECK
   rtPermissionsRef mPermissions;
 #endif

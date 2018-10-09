@@ -92,7 +92,6 @@ function loadFile(fileUri) {
 
 // same as above , but do local file, spark permission and CORS check
 function loadFileWithSparkPermissionsCheck( accessControl, http1, http2, fileUri) {
-  console.log("in loadFileWithSparkPermissionsCheck " + fileUri);
   return new Promise(function(resolve, reject) {
     var code = [];
     if (fileUri.substring(0, 4) == "http") {
@@ -100,7 +99,6 @@ function loadFileWithSparkPermissionsCheck( accessControl, http1, http2, fileUri
       var req = null;
       var httpCallback = function (res) {
         res.on('data', function (data) {
-          console.log("Received data");
           code += data;
         });
         res.on('end', function () {
@@ -115,9 +113,11 @@ function loadFileWithSparkPermissionsCheck( accessControl, http1, http2, fileUri
       };
       if (fileUri.substring(0, 5) == "https") {
         req = http2.get(options, httpCallback);
+        process._tickCallback();
       }
       else {
         req = http1.get(options, httpCallback);
+        process._tickCallback();
       }
       // handling of request failed may be due to spark permissions check
       // CORS denial case enters below error condition handler
