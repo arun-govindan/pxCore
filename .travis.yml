@@ -15,14 +15,13 @@ matrix:
   - os: osx
     osx_image: xcode9.4
     env:
-      matrix:
-        - USE_V8=ON
-        - USE_V8=OFF
+      - USE_V8=ON
+      - USE_V8=OFF
 language: c++
 before_install:
 - eval "${MATRIX_EVAL}"
+- if [ "$TRAVIS_EVENT_TYPE" != "pull_request" ]; then openssl aes-256-cbc -K $encrypted_a739ef9a19a4_key -iv $encrypted_a739ef9a19a4_iv -in pxscene-build.pem.enc -out /tmp/pxscene-build.pem -d; fi
 - printenv 
-- if [ "$TRAVIS_EVENT_TYPE" != "pull_request" ]; then openssl aes-256-cbc $encrypted_a739ef9a19a4_key -iv $encrypted_a739ef9a19a4_iv -in pxscene-build.pem.enc -out /tmp/pxscene-build.pem -d; fi
 - if [ "$TRAVIS_EVENT_TYPE" != "pull_request" ]; then  eval "$(ssh-agent -s)"; fi
 - if [ "$TRAVIS_EVENT_TYPE" != "pull_request" ]; then  chmod 0600 /tmp/pxscene-build.pem; fi
 - if [ "$TRAVIS_EVENT_TYPE" != "pull_request" ]; then  ssh-add /tmp/pxscene-build.pem; fi
