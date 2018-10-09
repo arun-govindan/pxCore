@@ -13,11 +13,10 @@ matrix:
     env:
       - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
   - os: osx
-    osx_image: xcode9.4
     env:
-      matrix:
-	- USE_V8=ON
-	- USE_V8=OFF
+      - USE_V8=ON
+      - USE_V8=OFF
+    osx_image: xcode9.4
 language: c++
 before_install:
 - eval "${MATRIX_EVAL}"
