@@ -3,7 +3,7 @@
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
 export PATH=$PWD/depot_tools/:$PATH
 echo "-------------- git clone completed"
-gclient
+gclient --version
 
 fetch v8
 echo "------------- fetch completed"
