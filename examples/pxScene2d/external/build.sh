@@ -147,7 +147,7 @@ then
 fi
 
 #-------- V8
-if [ "$USE_V8" == "ON" ]
+if [ "$USE_V8" != "ON" ]
 then
   ./buildV8.sh
 fi
