@@ -1,0 +1,608 @@
+===============================================================\n\nRelease 0.36.0.0 - 07Feb2018\n\n(github.com/johnrobinsn/pxCore: master - SHA d0af661)\n\nKnown Issues:\n\nCommits/Fixes:\n
+\n\n
+===============================================================\n\nRelease 0.36.0.0 - 07Feb2018\n\n(github.com/johnrobinsn/pxCore: master - SHA f069eaa)\n\nKnown Issues:\n\nCommits/Fixes:\n
+\n\n
+===============================================================\n\nRelease 0.36.0.0 - 07Feb2018\n\n(github.com/johnrobinsn/pxCore: master - SHA 3933b84)\n\nKnown Issues:\n\nCommits/Fixes:\n
+Added Scene Graph API doc (#835)
+utilize build parallelism (up to number of online CPUs) (#830)
+fix compilation error using -DUSE_STD_THREADS option (#829)
+fix compilation errors -Werror=unused-variable (#828)
+fix data race in rtMutexNative.cpp (#826)
+coverity fix for dukctx (#824)
+Limit the number of worker threads (#817)
+Fix for log dumpipng failed in OSX. (#833)
+image border unit test (#836)
+few build fixes (#832)
+Reinstate CORS and permissions in master (#822)
+add possibility to resolve servicemanager dependencies (#735)
+Fixing Xcode Workspace - adding DukTape stuff (#823)
+pxPixel.h code coverage (#805)
+http parser asserion validation on socket close (#815)
+SVG testing changes on re-synced sandbox (#707)
+Provided access to application to use the FilePointer to read the data in a smaller chunk. (#811)
+fix for ES5 javascript engines (#814)
+double buffering support for dirty rects (#812)
+build updates (#813)
+changes to make it work with system libraries (#700)
+Reduce rss memory used by rtremote (#807)
+unit test fix when debugging is not enabled (#808)
+Cleanup the mFileSizeMap, if the file was deleted manually and not er… (#789)
+Add quilt for osx (#806)
+Update Info.plist for new release
+fix for memory increase on page reloads (#803)
+fixes for build.sh clean.sh and buildWindows.bat scripts (#804)
+Appveyor support (#783)
+image border updates (#792)
+coverify fixes with duktape code integrated (#795)
+refactor code for global args in non-debug mode (#793)
+fix issues in building dukluv in few cmake systems (#794)
+updated ci scripts (#801)
+dirty rectangle updates (#802)
+unittests for download progress functionality (#787)
+Remove lighthttpd (#785)
+duktape support (#784)
+Add quilt to cache generation job
+test
+pem
+fix for screenshot's base64 string NULL-termination (#768)
+permissions for wayland apps; (#757)
+test image cache files without webserver and expiry date automated (#759)
+Testciscripts (#770)
+add 'series' file for quilt (#776)
+update dependencies (#758) (#771)
+Bash build fixes (#777)
+Ignore rapidjson for code coverage
+updated the windows SDK version info
+essos linking updates
+pem
+avoid using cached texture with dirty text object (#764)
+Update README.md
+Scripts Indentation (#765)
+Fix for pxObjectCount leak (#761)
+document minimum requirements for Windows and macOS (#762)
+turning on CORS support by default (#760)
+ensure there is enough texture memory before creating a FBO for long text strings (#756)
+loadScene and getPackageBaseFilePath did not handle full Windows file paths when launching from the MS Visual Studio Code IDE and in some command line situations.  These changes evaluate for the existence of the win32 platform and the use of a drive name, and if this condition occurs, then the full path is used. (#752)
+enable test for trusted functionalities (#750)
+adding tests for rtObjects (#754)
+Exclude unzip from code coverage numbers
+code coverage for pxArchive (#749)
+prevent onclose event conflicts (#739)
+fix for animation in oscillate mode (#747)
+remove unused function
+turning off CORS support by default (#751)
+add cross-compilation support for rtRemoteConfigGen tool (#699)
+Add an editorconfig for code style (#743)
+fix compilation errors (clang 4.x) - deprecated usage of 'register' keyword (#729)
+fix compilation errors in: egl/pxContextUtils.cpp, pxContextGL.cpp, pxWayland.cpp (#702)
+CORS for pxArchive, http/https wrap; security model; unit tests (#656)
+Windows: Updating Windows SDK to 10.0.16299.0 (#738)
+options to set pxscene resolution on startup (#737)
+configurable build option for wayland read events (#734)
+xcode updates
+image 9 border updates
+pxImage9Border updates
+remove unneeded unlock call (#728)
+pxImage9Border type (#733)
+fix font race conditions (#732)
+Add info on contributing and testRunner (#723)
+changes for removing timers data on timeout (#721)
+essos support (#720)
+additional null checks for macros (#718)
+code coverage for src/glut pxTimerNative.cpp (#647)
+src/rtObjectMacros.h: Type address to uintptr_t for comparision in macro (#621)
+changes for preveting process callback miss (#717)
+use link instead of file name for building Node.js (#695)
+fix breakpad compilation error (#694)
+fix include directory for v8 (#701)
+fix make 'clean' target (#678)
+build fix when compiling with xcode
+build fix when compiling with xcode
+framerate improvements for wayland
+updated error handling when reading events
+Fix so that ENTER key is only handled by browser.js if text box has focus
+remove unneeded drawing calls for wayland
+Call [sincos()] double implementation test repeatedly for CodeCov ... (#708)
+Resoving decoderHandle datatype mismatch (#710)
+Add ignore of testView.h for CodeCov
+disable signal handlers from node (#698)
+change user instructions in ci (#697)
+remove unsupported GCC pragma (#687)
+rtMutex tests (#706)
+Add some tests for rtLog (#705)
+Check connection state while waiting for response. (#689)
+update the windows version
+build fixes when building without http cache (#703)
+Update Info.plist for new release
+framerate updates (#671) (#692)
+fix compilation errors in pxWindowNative.cpp (#683)
+use precision for es firmware only (#690)
+Remove VS run time dependency (#691)
+print real (not hardcoded) node version (#688)
+add support for auto-generated files using cmake (#677)
+remove binary blobs: librtRemote_s.a and rpcSampleApp from git repository (#676)
+updates when building with the service manager
+unittests for ioapi.c (#685)
+updated link directories
+updates for building with the service manager
+Fix coverity issue
+ensure linked libraries are always marked as needed
+adding build switch to control rasterizer path item (#675)
+add missing header file (#674)
+fix cmake 'mis-matching arguments' warning (#673)
+Bunio restack with repaints and tests (#664)
+custom animator (#670)
+Change to use iter_swap
+Modified strcpy to strncpy in rtFileDownloadRequest::setHTTPError (#667)
+Removal of freeglut related information (#646)
+updated build instructions for rtRemote (#669)
+Bunio restack with repaints and tests
+Fixed deadlock on shutown. (#649)
+Trigger repaints and mark scene as dirty for moveToFront and moveToBack (#653)
+Added curl verbose,errorbuffer,timeout handling for caching http download (#657)
+Update Info.plist for osx release
+Revert "Revert "Remove build server from yml""
+Revert "Remove build server from yml"
+enabling global object support (#652)
+Remove build server from yml
+wayland app config updates (#651)
+update vm and port for build logs uploads
+configuration to enable require support (#648)
+Revert "Change address for ci results server"
+key code fixes for wayland
+Change address for ci results server
+updates for building app linking against shared library (#642)
+fix incorrect length modifier - causes compiler error using newer g++ (>6.4) (#639)
+Remove confusing console log
+rasterizer build updates
+Update for windows build 0.34.0.0
+Update Info.plist for 0.34.0.0
+frame rate updates for pxscene standalone
+Zero backlog Coverity fixes (#632)
+Latest ... Coverity raster issues (#631)
+obfuscate key code logging (#629)
+ability to disable wst decoder methods
+reject promise handling for invalid wayland apps (#627)
+adding back default implementation for onCloseRequest now that codecov header issues are fixed (#626)
+Update coverity scan build to use cmake
+Add back timed tests for fancy, picturepile and gallery that used to be in the ci/testRunner js files (#623)
+Use INFO for scene url logging (#622)
+Fix expiration data in cacheHeader (#620)
+add title for cache regeneration job
+unit test instruction updates (#619)
+ unit test instruction updates (#618)
+unit test instruction updates (#617)
+Code coverage for  pxMatrix4T (#615)
+Passing Decoder Handle from Westeros to Receiver for Helio player CC support (#611)
+service manager updates
+updates for wayland builds
+updates for pxscene standalone
+Code cov 2 (#613)
+updates for windows (#614)
+Update Info.plist
+changes for considering coverage in header files (#609)
+SVG Rounded Rectangles (#608)
+Codecov:  changed onCloseRequest() to pure virtual.  Added stubs to instances. (#607)
+Reverting CORS (#605)
+HTTP access control (CORS) for pxArchives (#604)
+memory leak fix (#603)
+Revert "Adding CMD-L alias to CTRL-L behavior (#598)" (#600)
+SVG Path ... benign code update (#594)
+Enable debugMetrics only for CI builds (#602)
+Fix for CMD key exclusion to onChar() call (#601)
+HTTP access control (CORS) for http/https modules (without preflight mode) (#595)
+Added script url to createService call. (#567)
+Adding CMD-L alias to CTRL-L behavior (#598)
+Changed spinner timeout from 1500ms to 500ms per JR suggestion (#597)
+Added support for guid without libuuid
+Added support gor guid without libuuid
+pxTexture unit test
+pxTexture unit test
+pxTexture unit test
+pxTexture unit test
+pxTexture unit test
+steps to build and run the unit tests
+updated build instructions for rtRemote
+updated build instructions for rtRemote
+updated build instructions for rtRemote
+updated build instructions for rtRemote
+adding cmake build support for rtRemote
+code coverage for pxWindowUtil; a fix for PX_KEY_ZERO + PX_MOD_SHIFT
+support to configure which libraries you would like to build (instead of all)
+fix for invalid stretch options
+Added a few samples.
+code coverage changes for utf8
+change script to take branch
+Add org to script
+fix for push undefined from nodejs in travis
+auto merge job
+fixing coverity defect
+auto merge job
+auto merge job
+auto merge job
+auto merge job
+enable stack trace on node exception on need
+fixing rtRemoteAsyncHandle compile error
+smooth downscaling support for pxImages that share image resources
+smooth downscaling support for images
+disabling local http and https access for remote files
+Add launch alternative instructions
+Log errors in function rtRemoteAsyncHandle::wait()
+adding support file for http access tests
+merge testrunner scripts in travis
+Making KEYS HELP non-interactive... prevents 'deadzone' in content area swallowing events
+Moving [about.js] to adjacent to [browser.js]
+Typo in PNG url for [pxscene.png] ... deliberate error for reachability testing
+Changes to [about.js] ... Fix for [browser.js] content focus on URL load
+Disabling FONT / GLYPH 'scaling' memory saving strategy ... some glyphs too wide.
+Warnings as Errors on macOS 'CMake' build...
+disabling local http and https access for remote files
+Remove code that came from windows merge; it was causing file:// urls to not work if they had query params
+fix error during build in mac
+build cleanup and non-wayland fixes
+fix to ensure the correct shader program will be used after switching FBOs
+   Modified dataCache(); to isDataCached().
+  Modified member names as per coding standard.
+Removal of "moveToCenter()" etc code...
+Updated .gitignore to ignore files under external directories
+Tests without mocks
+Adding changes for [about.js] and URL bar dynamics
+changes for generating cache online
+fix uninitialized variables in unzip.c
+removing debug statements
+suspend and resume support for pxWayland apps
+Fixes for CTRL-L and some focus wonky stuff
+Fix for a crash on a client destruction
+Update testRunner_memcheck_osx.js
+Update unzip.c
+Update testRunner_memcheck_osx.js
+changes for fixing uninitialized defect
+removing testrunner for osx pxleak checks and memleak checks
+  Added Data download progress callback.
+Update pxScene.cpp
+Update pxScene.cpp
+Add unit test for pxOffscreen; make functions virtual to allow for mocking
+disabling expensive travis mac os x memory leak checks for now
+README updates for building the unit tests
+adding changes for fixing ignored defects
+enable breakpad for windows
+rtRemote support for all platforms when building with wayland
+Compile fix for newer versions of GCC/LLVM in remote
+ensure version is updated for release builds
+mac os x deploy update
+travis build updates for deploying
+travis build updates
+build procedure updates
+update windows version number
+added supported platforms to the README.md file
+Prep for 0.31.0.0 release
+external build support for windows breakpad
+CodeCov Improvements to >80% mark
+Update monitor.sh
+enable leak checks for mac
+ignore node http parser leaks
+wayland build support updates
+updates for wayland egl support
+updates for wayland
+Update pxScene.cpp
+added pxscene standalone app support for other embedded platforms
+escape few characters in url
+per Code review comment.  Removed redundent code
+Update pxScene.cpp
+escape few characters in url
+remove externals glut from ubuntu
+remove duplicate files used for running javascript unittests
+code coverage for pxcontext
+Additions to improve Code Coverage / Unit Tests
+update for gles method signature to fix gles linking issues
+code coverage for rtobject
+README.md update
+Revert "resolve promise rather than rejecting for canceled animations"
+highlight windows build instructions
+highlight windows build instructions
+updated build instructions for cmake
+windows installer updates
+enabling code coverage for c files
+reinstate fix from PR #401
+windows installer
+windows installer
+Commented out Bodymovin build step for now. It needs -npm-
+Adding Bodymovin -player- code
+change build system to cmake in travis
+add status for inprogress animation
+Scale make parallelism with cores, curl/ssl fix
+mac osx updates
+unittests  for unzip
+coverity fixes
+Change travis to do coverity scan for coverity_scan branch
+disabling leak check for mac
+unit test updates for mac
+windows branch
+fix coverity defect for integer overflow
+Skip unit tests and code coverage for release builds
+cmake updates
+Denote 3rd party modified code section
+Enable compiling with llvm toolchain
+build script updates
+removing unused windows cruft
+fixing memory leaks
+Prep for 0.30.0.0 release
+support for version information
+updates for windows icons
+updates to the windows build scripts
+updates to windows build scripts
+windows build scripts
+rtWrapper updates
+updated files for windows builds
+updating the service manager and its api
+resolve promise rather than rejecting for canceled animations
+Change directory for glut make
+fix code coverage capture for unittests
+osx unittests
+fix for pxobjects leak
+fix for pxobjects leak
+cmake updates
+updating cmake support for windows
+updating freetype version
+build updates
+build updates
+build updates
+updates for windows
+fix warnings
+Remove commented out code
+Add tests for image9 and imageA
+Fix so that imageA url is from pxResource and is properly returned for getUrl.
+Remove extra space
+Fix to reject promise if resource is wrong type
+Fixing a build error in unit tests caused by keyword redefinition
+skip pxwayland tests for osx
+fix for crash for clipboard getString() in desktop linux
+Proper linux keycodes are assigned to colore keys.
+Update pxWaylandContainer.cpp
+Update testrunner_osx.sh
+Update pxWaylandContainer.cpp
+Update pxWaylandContainer.cpp
+Update pxWaylandContainer.h
+Update tests.json
+Update tests.json
+Update testrunner_linux.sh
+Update testrunner_linux.sh
+adding pxanimate,pxscene2d,pxresource to tests.json
+adding pxanimate,pxscene2d,pxresource to tests.json
+cmake unit test updates
+cmake updates for building unit tests
+Free memory within the scope it was allocated
+fix coverity warning
+Add one missed member data initialization from Coverity scan
+Cast each return value
+enable osx backtrace
+fix to ensure long text is always rendered
+Fix issues reported by Coverity scan
+enable codecov
+turning on compile errors as warnings for pxscene
+support for adding extra platform defines when using cmake
+Better Double-Click to Highlight ALL
+enabling image cache tests
+Change github repo path
+support for adding extra platform defines when using cmake
+cmake build updates
+updates for cmake builds
+Fix warnings about uninitialized member data
+Linux Key code for Color keys are correctly mapped
+Linux Key code for PX_KEY_PAGEDOWN is incorrectly mapped
+add more details on travis errors
+Fix memory leak found by Coverity scan
+Fix for image9 and imageA promise creation after failure occurs
+fix undefined checks
+support for scene ready callbacks
+Update display name after init to allow access to an auto generated name.  Fix potential crash in pxWaylandContainer destructor.  Add unit test for auto generated display name
+display backtraces for crashed execution for linux
+display backtraces for crashed execution for linux
+Adding browser/ folder to XCode project.  Hiding cursor in browser.js when URL loaded
+Fix url to test file
+Revert "Increase testRunner time"
+Increase testRunner time
+Fix promise creation if promise was rejected and image is set to empty, then to new url
+Kill wayland client if necessary When a pxWayland instance is destroyed, it stops and destroys its Westeros compositor instance and this will usually trigger the exit of any client process attached to the compositor.  It is possible that the client will not exit, however, so code is added to explicitly kill the client process if it does not exit on its own. Add some pxWayland unit tests.
+possible fix for avoiding crash on exit of unittests
+Create testRunner_memcheck.js
+Initializer vs Declaration order... warning as error - FIXED
+Reverting WS changes
+General code clean up
+Create testRunner_memcheck.js
+enable testrunner tests for memory leak detecttion
+enable testrunner tests for memory leak detecttion
+Fix leak of pxWayland objects on dispose
+Update wayland registry to allow arguments Wayland registry entries with a '%' suffix on the specified binary will now allow arguments.  The command supplied by JavaScript excluding any arguments will be used as the registry search key and the regstry binary will be invoked with the supplied arguments. Added entries to waylandregistry.conf for westeros_test and gst-launch allowing arguments
+Fix support for the absolute paths in rcvrcore/AppSceneContext.js
+Create AppSceneContext.js
+fix jscontext leak due to file import
+set parent of all children to NULL in removeall
+Update AppSceneContext.js
+automate fixing leaks for scene containers without parent
+fix jscontext leak due to file import
+Typos fixed
+Add testRunner to testRunner_memcheck.js
+Use new tests.json as testRunner testss; comment out 3 failing pxUtil tests
+Fix for use of DISABLE_MINIFY .. creates folders correctly
+XRE2-10: Removed unneeded changes.
+Remove testRunner from mem checks
+removing curl handle reuse
+proxy download support for pxResource types
+Revert "fix for pxobject leaks without parent and crash from removeAll"
+XRE2-10: Used SERVICE_MANAGER environment variable to enable Service Manager support.
+fix for pxobject leaks without parent and crash from removeAll
+removed unused variable
+fix for coverage measurement in local machine
+Minor bug fixes
+disabling image cache unit test as builds are failing.  please fix and re-enable
+per property animation status shown cancelled for ended animation
+enabling curl reuse handles
+enabling curl reuse handles
+removed some tests to fix unit test results and crashes
+Revert "fix for leaks happening due to scene object without parent"
+fix for grayscale jpeg images
+fix for grayscale jpeg images
+Do-over of rtZip unit tests commit - resolve conflict
+Adding Unit test for rtString
+moving to freetype 2.5.2
+Adding DISABLE_MINIFY as ENV variable to control Closure Compiler
+Fix for DFB surface LEAK in pxTextureOffscreen
+fix for screenshot crash on mac
+fix for cancel status for animation with type oscillate - addressed comments
+fix ccache error - before_script.sh changes
+fix ccache error - travis.yml changes
+fix for cancel status for animation with type oscillate
+fix for cancel status for animation with type oscillate
+formatting updates
+Add test to makefile
+updated build configurations
+Add unit test for pxImage stretch
+updates for unit test builds
+Switching to PRId64
+adding readme file for unit test build instructions
+Fix for stretch NONE when pxImage w or h are explicitly set
+nested cmake support
+printf formats for 64 bit - WARNINGS as ERRORS
+Changes for Mac - WARNINGS as ERRORS
+Additional WARNINGS as ERRORS chages
+Initial commit of WARNINGS as ERRORS
+support for building lib pxWayland
+support for building shared libraries
+Update .travis.yml
+increase c++ code coverage for few components
+fix for travis build failure due to key update
+Update leak.supp
+automate release build for osx
+cmake support for raspberry pi
+Cleaned up AppSceneContext.js: removed unused code, moved AsyncFileAcquisition and JarFileMap to new files. Reworked the use of jar/zip packages, added support for including jars, added support for including js into another js if they both are located inside the same jar
+fix for crash from unittests in linux
+fix for crash from unittests in linux
+XRE2-10: Enabled rtRemote for pxscene, libpxscene.so and libpxscene.a targets only.
+XRE2-10: Build fix. Service Manager support is optional, depending on rtRemote lib availability.
+Moved cleanup code back to onCloseRequest.
+updates for anti aliasing
+updates for anti aliasing
+XRE2-10: Added support for ServiceManager
+updates for using external glut
+adding cmake support for glut and mac
+disabling external glut by default
+Make for X11 on Linux failed due on missing symbol
+enabling dirty rects for dfb builds
+build fix for 32 bit platforms
+fix destructor warning in jsobjectwrapper and rtobjectwrapper
+fix error condition in pxutil
+Adding GL_GLEXT_PROTOTYPES macro for refsw-16.2's gle2ext.h.
+few fixes in caching for memory corruption and filesystem removal
+Fix for failing linux build in CI. Issue #51
+Addtional re-Focus fix.  Added some properties too.
+fix for unittests failure detection for non-pull requests
+few fixes in caching for memory corruption and filesystem removal
+Breakpad isn’t quite ready yet
+Revert "Merge branch 'master' of https://github.com/topcoderinc/pxCore into _windows_port"
+Will this fix things?  Only Visual Studio knows for sure.
+Broken include directory
+Update to output naming
+commenting testrunner.js till scene without parent leak is fixed
+Fixed focus better, by disabling interactivity appropriately.  Fixed fn+DELETE forwards delete.
+fix externals clean
+Fixed focus on click within ClipView
+Fixed focus
+Slight optimization refactor to GL.  Premultiply only if needed.  Fix to DFB for Child Alpha
+Add pxAnimate source to project
+running javascript files under unittests for linux
+running javascript files under unittests for linux
+Revert "Versioning for auto-update testing"
+Versioning for auto-update testing
+Pthread from last known good build
+Revert "pthread ref"
+pThread as lib
+additional updates for dfb builds
+build updates for dfb
+updates examples to support freeglut or system glut
+pthread ref
+Fix after build script
+Next attempt
+Baby steps
+Another CI try
+Try again
+Another CI pass attempt
+Pretty sure Visual Studio hates me.  Added back in missing dependency links
+Dependency fix
+Fix up some of the dependencies that got messed up in VS
+Update README.md
+Let’s try this.
+Library references
+Config updates for all targets, not just debug
+CI updates to fix latest failing build
+Updates to installer setup
+Updates to documentation and package file for output exe installer name (now pxscene-setup)
+Restoring some whitespace that existed originally
+Revert indentation change
+Better cursor mouse-click positioning. Better selection rect Z-order. Other tweaks
+Fixed issue with breakpadSupport.h being in the wrong location.
+animate cancel change and adding unitests for animate
+animate cancel change and adding unitests for animate
+CI include directory update
+CI test
+This file was missing for some reason
+Need these for CI
+Test appcast URL
+Merge fixes
+Winsparkle from source
+Better Mouse click - cursor position - accuracy
+Better onSize() behavior...
+Fixes issue #48.
+EditBox no handles long content with a clip rect / scroll view design
+Fix merge issue
+Win sparkle
+Updates to the installer script for CI
+Update pxWayland to use new westeros hints
+Update testRunner_memcheck.js
+adding testrunner to leak checks
+Update test_memoryleak.cpp
+Update test_memoryleak.cpp
+fix for leaks happening due to scene object without parent
+fix leaks due to module exports
+fix for errors on window close in ubuntu
+Fixes to installer:
+repaint after pxObject remove
+Update leak.supp
+fix for shader leaks
+fix for ctrl-2 and ctrl-3 not working in ubuntu
+introducing animation api returning animation object
+Some fixes to merge upstream master into windows port.
+updating some build defines
+build fix for older versions of libnode
+build fix for older versions of libnode
+Initial move to [browser] folder.  Refactor of [editbox.js] functionality out of [browser.js]
+Modified libcurl to use system SSL implementation instead of OpenSSL.
+Fixes to the Debug release broken during last commit.
+Replaced binary GLEW dependency by source code.
+Removed dependency on GLUT. Using native OpenGL impl.
+fix for leaks due to non-release glx display
+adding freeglut 3.0.0
+Adding minify JAVA installed protections, and fix for 'rapidjson' in pxScene2d XCode build
+Revert "Adding calls to Google Closure Compiler..."
+logging updates
+support for texture ejection
+fixing permission issue with valgrind logs
+Adding calls to Google Closure Compiler...
+updates for adding netflix app
+Update pxWindowNative.mm
+memory leak due to delegate for mac
+fix script error during execution
+Windows build cleanup
+rounding issue fix
+Update Makefile
+code coverage support for linux and mac
+Update pxScene2d.cpp
+passing scene instead of api property in promise resolve during scene creation
+wayland apps configuration support
+VSCode | JSHint - reduced warnings
+Removed bad comment
+Various fixes
+Revert questionable changes
+Removed installer
+Windows project and installer
+\n\n
