@@ -21,6 +21,8 @@ then
 
   if [ "$(uname)" = "Darwin" ]; then
     ./configure --with-darwinssl
+    #Removing api definition for Yosemite compatibility.
+    sed -i '' '/#define HAVE_CLOCK_GETTIME_MONOTONIC 1/d' lib/curl_config.h
   else
       if [ $(echo "$(openssl version | cut -d' ' -f 2 | cut -d. -f1-2)>1.0" | bc) ]; then
           echo "Openssl is too new for this version of libcurl.  Opting for gnutls instead..."
@@ -35,6 +37,7 @@ then
       fi
   fi
 
+  
   make all "-j${make_parallel}"
   cd ..
 
@@ -123,52 +126,52 @@ then
 fi
 
 #--------- LIBNODE
-
-if [ ! -e node/libnode.dylib ] ||
-   [ "$(uname)" != "Darwin" ]
+if [ "$USE_V8" != "ON" ]
 then
 
-  cd node
-  ./configure --shared
-  make "-j${make_parallel}"
-  ln -sf out/Release/obj.target/libnode.so.48 libnode.so.48
-  ln -sf libnode.so.48 libnode.so
-  ln -sf out/Release/libnode.48.dylib libnode.48.dylib
-  ln -sf libnode.48.dylib libnode.dylib
-  cd ..
+  if [ ! -e node/libnode.dylib ] ||
+  [ "$(uname)" != "Darwin" ]
+    then
 
+    cd node
+    ./configure --shared
+    make "-j${make_parallel}"
+    ln -sf out/Release/obj.target/libnode.so.48 libnode.so.48
+    ln -sf libnode.so.48 libnode.so
+    ln -sf out/Release/libnode.48.dylib libnode.48.dylib
+    ln -sf libnode.48.dylib libnode.dylib
+    cd ..
+
+  fi
+
+fi
+
+#-------- V8
+if [ "$USE_V8" != "ON" ]
+then
+  ./buildV8.sh
 fi
 
 #-------- BREAKPAD (Non -macOS)
 
 if [ "$(uname)" != "Darwin" ]; then
-
-  cd breakpad
-  quilt push -aq || test $? = 2
-  ./configure
-  make
-  cd ..
-
+  ./breakpad/build.sh
 fi
 
 #-------- NANOSVG
 
-cd nanosvg
-quilt push -aq || test $? = 2
-cd ..
+./nanosvg/build.sh
 
-#-------- DUKTAPE
 
-if [ ! -e dukluv/build/libduktape.a ]
+if [ "$USE_V8" != "ON" ]
 then
-    cd dukluv
-    quilt push -aq || test $? = 2
-    mkdir -p build
-    cd build
-    cmake ..
-    make "-j${make_parallel}"
-    cd ..
+
+  #-------- DUKTAPE
+
+  if [ ! -e dukluv/build/libduktape.a ]
+  then
+    ./dukluv/build.sh
+  fi
+
+  #--------
 fi
-
-#--------
-

@@ -43,7 +43,8 @@ export SPARK_ENABLE_COLLECT_GARBAGE=1
 
 EXECLOGS=$TRAVIS_BUILD_DIR/logs/exec_logs
 LEAKLOGS=$TRAVIS_BUILD_DIR/logs/leak_logs
-TESTRUNNERURL="https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/testRunner_v5.2.js"
+TESTRUNNERURL="https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/testRunner_v7.js"
+TESTS="file://$TRAVIS_BUILD_DIR/tests/pxScene2d/testRunner/tests.json,file://$TRAVIS_BUILD_DIR/tests/pxScene2d/testRunner/testsDesktop.json"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 printExecLogs()
@@ -57,7 +58,8 @@ printExecLogs()
 # Start testRunner ...
 rm -rf /var/tmp/spark.log
 cd $TRAVIS_BUILD_DIR/examples/pxScene2d/src/spark.app/Contents/MacOS
-./spark.sh $TESTRUNNERURL?tests=file://$TRAVIS_BUILD_DIR/tests/pxScene2d/testRunner/tests.json &
+./spark.sh $TESTRUNNERURL?tests=$TESTS &
+
 
 # Monitor testRunner ...
 count=0
@@ -89,12 +91,29 @@ while [ "$count" -le "$max_seconds" ]; do
 	count=$((count+30)) # add 30 seconds
 done #LOOP
 
+grep -n "WARNING: ThreadSanitizer:" /var/tmp/pxscene.log
+if [ "$?" -eq 0 ]
+    then
+    cp /var/tmp/pxscene.log $EXECLOGS
+    if [ "$TRAVIS_PULL_REQUEST" != "false" ]
+    then
+      errCause="Race Condition detected. Check the above logs"
+      printExecLogs
+    else
+      errCause="Race Condition detected. Check the log file $EXECLOGS"
+    fi
+    checkError -1 "Testcase Failure" "$errCause" "Compile spark with -DENABLE_THREAD_SANITIZER=ON option and test with tests.json file."
+    exit 1
+fi
+
 # Handle crash - 'dumped_core = 1' ?
 if [ "$dumped_core" -eq 1 ]
 	then
 	ps -ef | grep Spark |grep -v grep >> /var/tmp/spark.log
-        ps -ef |grep /bin/sh |grep -v grep >> /var/tmp/spark.log
+  ps -ef |grep /bin/sh |grep -v grep >> /var/tmp/spark.log
 	$TRAVIS_BUILD_DIR/ci/check_dump_cores_osx.sh `pwd` `ps -ef | grep Spark |grep -v grep|grep -v spark.sh|awk '{print $2}'` /var/tmp/spark.log
+  cp /var/tmp/pxscene.log $EXECLOGS
+  printExecLogs
 	checkError $dumped_core "Execution failed" "Core dump" "Run execution locally"
 fi
 
@@ -148,7 +167,7 @@ else
 	else
 		errCause="Check the $EXECLOGS file"
 	fi 
-	checkError -1 "Texture leak or pxobject leak" "$errCause" "Follow steps locally: export PX_DUMP_MEMUSAGE=1;export RT_LOG_LEVEL=info;./spark.sh $TESTRUNNERURL?tests=<pxcore dir>/tests/pxScene2d/testRunner/tests.json locally and check for 'texture memory usage is' and 'pxobjectcount is' in logs and see which is non-zero" 
+	checkError -1 "Texture leak or pxobject leak" "$errCause" "Follow steps locally: export PX_DUMP_MEMUSAGE=1;export RT_LOG_LEVEL=info;./spark.sh $TESTRUNNERURL?tests=$TESTS locally and check for 'texture memory usage is' and 'pxobjectcount is' in logs and see which is non-zero" 
 	exit 1;
 fi
 
@@ -162,7 +181,7 @@ if [ "$leakcount" -ne 0 ]
 	else
 		errCause="Check the file $LEAKLOGS and $EXECLOGS"
 	fi
-	checkError $leakcount "Execution reported memory leaks" "$errCause" "Run locally with these steps: export ENABLE_MEMLEAK_CHECK=1;export MallocStackLogging=1;export PX_DUMP_MEMUSAGE=1;./spark.sh $TESTRUNNERURL?tests=<pxcore dir>/tests/pxScene2d/testRunner/tests.json &; run leaks -nocontext Spark >logfile continuously until the testrunner execution completes; Analyse the logfile" 
+	checkError $leakcount "Execution reported memory leaks" "$errCause" "Run locally with these steps: export ENABLE_MEMLEAK_CHECK=1;export MallocStackLogging=1;export PX_DUMP_MEMUSAGE=1;./spark.sh $TESTRUNNERURL?tests=$TESTS &; run leaks -nocontext Spark >logfile continuously until the testrunner execution completes; Analyse the logfile" 
 	exit 1;
 else
 	echo "Valgrind reports success !!!!!!!!!!!"

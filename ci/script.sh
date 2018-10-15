@@ -66,10 +66,21 @@ if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request
 then
   sh build_px.sh 
   checkError $? "#### Build/unittests/execution [build_px.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
+  
 
-  sh "build_$TRAVIS_OS_NAME.sh" 
-  checkError $? "#### Build/unittests/execution [build_$TRAVIS_OS_NAME.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
-
+  if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$USE_V8" = "ON" ] ;
+  then
+    sh "build_v8Only_linux.sh"
+    checkError $? "#### Build/unittests/execution [build__V8Only.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
+  elif  [ "$TRAVIS_OS_NAME" = "osx" ] && [ "$USE_V8" = "ON" ] ;
+  then
+    sh "build_v8Only_osx.sh"
+    checkError $? "#### Build/unittests/execution [build__V8Only.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
+  else
+    sh "build_$TRAVIS_OS_NAME.sh"
+    checkError $? "#### Build/unittests/execution [build_$TRAVIS_OS_NAME.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
+  fi
+  
   sh "unittests_$TRAVIS_OS_NAME.sh" 
   checkError $? "#### Build/unittests/execution [unittests_$TRAVIS_OS_NAME.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
 
@@ -93,8 +104,10 @@ fi
 
 if [ "$TRAVIS_EVENT_TYPE" = "cron" ] ;
 then
-  cp $TRAVIS_BUILD_DIR/examples/pxScene2d/src/deploy/mac/Spark.dmg $TRAVIS_BUILD_DIR/artifacts/SparkEdge.dmg
+  cp $TRAVIS_BUILD_DIR/examples/pxScene2d/src/deploy/mac/SparkEdge.dmg $TRAVIS_BUILD_DIR/artifacts/SparkEdge.dmg
   checkError $? "Copying dmg file failed" "Could be build problem or file not generated" "Analyze build logs"
+  cp $TRAVIS_BUILD_DIR/examples/pxScene2d/src/deploy/mac/software_update.plist $TRAVIS_BUILD_DIR/artifacts/.
+  checkError $? "Copying software_update.plist failed" "Could be build problem or file not generated" "Analyze build logs"
 fi
 
 exit 0;
