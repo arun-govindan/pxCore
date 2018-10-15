@@ -67,11 +67,24 @@ then
   sh build_px.sh 
   checkError $? "#### Build/unittests/execution [build_px.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
   
+
+  if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$USE_V8" != "ON" ]
+    sh "build_v8Only_linux.sh"
+    checkError $? "#### Build/unittests/execution [build__V8Only.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
+  elif  [ "$TRAVIS_OS_NAME" = "osx" ] && [ "$USE_V8" != "ON" ]
+    sh "build_v8Only_osx.sh"
+    checkError $? "#### Build/unittests/execution [build__V8Only.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
+  else
+    sh "build_$TRAVIS_OS_NAME.sh"
+    checkError $? "#### Build/unittests/execution [build_$TRAVIS_OS_NAME.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
+  fi
+  
+
   if [ "$USE_V8" != "ON" ]
   then 
     sh "build_$TRAVIS_OS_NAME.sh" 
     checkError $? "#### Build/unittests/execution [build_$TRAVIS_OS_NAME.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
-  else
+  else if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$USE_V8" != "ON" ]
     sh "build_v8Only.sh"
     checkError $? "#### Build/unittests/execution [build__V8Only.sh] failed" "Either build problem/execution problem" "Analyze corresponding log file"
   fi
