@@ -32,6 +32,12 @@
 
 #include "pxContext.h"
 
+#ifdef ENABLE_RT_NODE
+#include "rtScript.h"
+#endif //ENABLE_RT_NODE
+
+#include "rtSettings.h"
+
 #include <map>
 using namespace std;
 
@@ -82,6 +88,31 @@ pxWayland::pxWayland(bool useFbo, pxScene2d* sceneContainer)
   mClearColor[1]= 0.0;
   mClearColor[2]= 0.0;
   mClearColor[3]= 0.0;
+
+  static bool checkForDisablingFbo = true;
+  static bool allowFbo = true;
+  if (checkForDisablingFbo)
+  {
+    rtValue enablePxWaylandFbo;
+    if (RT_OK == rtSettings::instance()->value("enablePxWaylandFbo", enablePxWaylandFbo))
+    {
+      allowFbo = enablePxWaylandFbo.toBool();
+      rtLogWarn("pxWayland FBO setting value: %s", allowFbo ? "true" : "false");
+    }
+
+    char const *s = getenv("SPARK_DISABLE_PXWAYLAND_FBO");
+    if (s && (strcmp(s, "1") == 0))
+    {
+      rtLogWarn("disabling the pxWayland FBO");
+      allowFbo = false;
+    }
+    checkForDisablingFbo = false;
+  }
+  if (!allowFbo)
+  {
+    rtLogWarn("disabling normal use of FBO for pxWayland");
+    mUseFbo = false;
+  }
 }
 
 pxWayland::~pxWayland()
@@ -313,6 +344,10 @@ void pxWayland::onUpdate(double t)
 
   if(!mReadyEmitted && mEvents && mWCtx && (!mUseDispatchThread || !mWaitingForRemoteObject) )
   {
+#ifdef ENABLE_RT_NODE
+    rtWrapperSceneUnlocker unlocker;
+#endif //ENABLE_RT_NODE
+
     mReadyEmitted= true;
     mEvents->isReady(true);
   }
@@ -457,7 +492,8 @@ void pxWayland::handleHidePointer( bool hide )
 
 void pxWayland::handleClientStatus( int status, int pid, int detail )
 {
-   mClientPID = status == WstClient_stoppedAbnormal || status == WstClient_stoppedNormal ? -1 : pid;
+   if ( mClientPID <= 0 )
+      mClientPID = ( ( status == WstClient_stoppedAbnormal ) || ( status == WstClient_stoppedNormal ) ) ? -1 : pid;
    if ( mEvents )
    {
       switch ( status )

@@ -177,6 +177,7 @@ public:
     else {
       snprintf(buffer,sizeof(buffer),"shell.js?url=%s",escapedUrl.c_str());
     }
+
 #ifdef RUNINMAIN
     setView( new pxScriptView(buffer,"javascript/node/v8"));
 #else
@@ -254,10 +255,16 @@ protected:
       gApplicationIsClosing = true;
     
     rtLogInfo(__FUNCTION__);
-    
+    fflush(stdout);
     ENTERSCENELOCK();
     if (mView)
+    {
+      rtLogInfo("onClose request started");
+      fflush(stdout);
       mView->onCloseRequest();
+      rtLogInfo("onClose request completed");
+      fflush(stdout);
+    }
     EXITSCENELOCK()
     // delete mView;
 
@@ -278,16 +285,27 @@ protected:
     free(g_origArgv);
   #endif
 
+    rtLogInfo("about to clear all the fonts during close");
+    fflush(stdout);
     pxFontManager::clearAllFonts();
-    
+    rtLogInfo("cleared all the fonts during close");
+    fflush(stdout);
     context.term();
 #ifdef RUNINMAIN
     script.pump();
 #endif
+    rtLogInfo("about to call garbage collect during close");
+    fflush(stdout);
     script.collectGarbage();
+    rtLogInfo("called garbage collect during close");
+    fflush(stdout);
 
     if (gDumpMemUsage)
     {
+      #ifdef RUNINMAIN
+          script.pump();
+      #endif
+      script.collectGarbage();
       rtLogInfo("pxobjectcount is [%d]",pxObjectCount);
 #ifndef PX_PLATFORM_DFB_NON_X11
       rtLogInfo("texture memory usage is [%" PRId64 "]",context.currentTextureMemoryUsageInBytes());
@@ -474,6 +492,8 @@ int pxMain(int argc, char* argv[])
   uv_async_init(nodeLoop, &gcTrigger,collectGarbage);
 
 #endif
+
+  rtModuleDirs::instance();
 
   rtString settingsPath;
   if (RT_OK == rtGetHomeDirectory(settingsPath))

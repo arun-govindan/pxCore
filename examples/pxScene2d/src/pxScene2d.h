@@ -70,7 +70,7 @@
 #include "rtCORS.h"
 
 #include "rtServiceProvider.h"
-
+#include "rtSettings.h"
 #ifdef RUNINMAIN
 #define ENTERSCENELOCK()
 #define EXITSCENELOCK() 
@@ -444,6 +444,7 @@ public:
   virtual void update(double t);
   virtual void releaseData(bool sceneSuspended);
   virtual void reloadData(bool sceneSuspended);
+  virtual uint64_t textureMemoryUsage();
 
   // non-destructive applies transform on top of of provided matrix
   virtual void applyMatrix(pxMatrix4f& m)
@@ -506,8 +507,11 @@ public:
       float dy = -(mpy * mh);
       
       // translate based on xy rotate/scale based on cx, cy
-      m.translate(mx + mcx + dx, my + mcy + dy);
-      
+      bool doTransToOrig = msx != 1.0 || msy != 1.0 || mr;
+      if (doTransToOrig)
+          m.translate(mx + mcx + dx, my + mcy + dy);
+      else
+          m.translate(mx + dx, my + dy);
       if (mr)
       {
         m.rotateInDegrees(mr
@@ -517,7 +521,8 @@ public:
         );
       }
       if (msx != 1.0 || msy != 1.0) m.scale(msx, msy);
-      m.translate(-mcx, -mcy);
+      if (doTransToOrig)
+          m.translate(-mcx, -mcy);
 #else
       // translate/rotate/scale based on cx, cy
       m.translate(mx, my);
@@ -749,7 +754,7 @@ protected:
   bool mRepaint;
   #ifdef PX_DIRTY_RECTANGLES
   bool mIsDirty;
-  pxMatrix4f mLastRenderMatrix;
+  pxMatrix4f mRenderMatrix;
   pxRect mScreenCoordinates;
   pxRect mDirtyRect;
   #endif //PX_DIRTY_RECTANGLES
@@ -1063,6 +1068,7 @@ public:
   virtual void* getInterface(const char* name);
   virtual void releaseData(bool sceneSuspended);
   virtual void reloadData(bool sceneSuspended);
+  virtual uint64_t textureMemoryUsage();
   
 private:
   rtRef<pxScriptView> mScriptView;
@@ -1079,7 +1085,7 @@ typedef rtRef<pxObject> pxObjectRef;
 class pxScriptView: public pxIView
 {
 public:
-  pxScriptView(const char* url, const char* /*lang*/);
+  pxScriptView(const char* url, const char* /*lang*/, pxIViewContainer* container=NULL);
 #ifndef RUNINMAIN
   void runScript(); // Run the script
 #endif
@@ -1173,8 +1179,11 @@ public:
 
   rtError suspend(const rtValue& v, bool& b);
   rtError resume(const rtValue& v, bool& b);
+  rtError textureMemoryUsage(rtValue& v);
   
 protected:
+
+  static rtError printFunc(int /*numArgs*/, const rtValue* /*args*/, rtValue* result, void* ctx);
 
   static rtError getScene(int /*numArgs*/, const rtValue* /*args*/, rtValue* result, void* ctx);
   static rtError makeReady(int /*numArgs*/, const rtValue* /*args*/, rtValue* result, void* ctx);
@@ -1292,6 +1301,7 @@ protected:
   rtObjectRef mReady;
   rtObjectRef mScene;
   rtRef<pxIView> mView;
+  rtRef<rtFunctionCallback> mPrintFunc;
   rtRef<rtFunctionCallback> mGetScene;
   rtRef<rtFunctionCallback> mMakeReady;
   rtRef<rtFunctionCallback> mGetContextID;
@@ -1328,6 +1338,7 @@ public:
   rtMethod1ArgAndReturn("suspend", suspend, rtValue, bool);
   rtMethod1ArgAndReturn("resume", resume, rtValue, bool);
   rtMethodNoArgAndReturn("suspended", suspended, bool);
+  rtMethodNoArgAndReturn("textureMemoryUsage", textureMemoryUsage, rtValue);
 /*
   rtMethod1ArgAndReturn("createExternal", createExternal, rtObjectRef,
                         rtObjectRef);
@@ -1370,6 +1381,7 @@ public:
 
   rtMethodNoArgAndNoReturn("dispose",dispose);
 
+  rtMethod1ArgAndReturn("sparkSetting", sparkSetting, rtString, rtValue);
   rtMethod1ArgAndNoReturn("addServiceProvider", addServiceProvider, rtFunctionRef);
   rtMethod1ArgAndNoReturn("removeServiceProvider", removeServiceProvider, rtFunctionRef);
 
@@ -1388,6 +1400,11 @@ public:
        //delete mTestView; // HACK: Only used in testing... 'delete' causes unknown crash.
        mTestView = NULL;
     }
+    if (mArchive != NULL)
+    {
+       mArchive = NULL;
+    }
+    mArchiveSet = false;
   }
   
   virtual unsigned long AddRef() 
@@ -1468,6 +1485,7 @@ public:
   rtError suspend(const rtValue& v, bool& b);
   rtError resume(const rtValue& v, bool& b);
   rtError suspended(bool &b);
+  rtError textureMemoryUsage(rtValue &v);
 
   rtError addListener(rtString eventName, const rtFunctionRef& f)
   {
@@ -1519,6 +1537,7 @@ public:
 #endif
   rtCORSRef cors() const { return mCORS; }
   rtError cors(rtObjectRef& v) const { v = mCORS; return RT_OK; }
+  rtError sparkSetting(const rtString& setting, rtValue& value) const;
   rtError origin(rtString& v) const { v = mOrigin; return RT_OK; }
 
   void setMouseEntered(rtRef<pxObject> o);//setMouseEntered(pxObject* o);
@@ -1544,7 +1563,7 @@ public:
   virtual void onComplete();
 
   virtual void setViewContainer(pxIViewContainer* l);
-
+  pxIViewContainer* viewContainer();
   void invalidateRect(pxRect* r);
   
   void getMatrixFromObjectToScene(pxObject* o, pxMatrix4f& m);
@@ -1588,10 +1607,46 @@ public:
 
     rtError e = RT_FAIL;
     rtRef<pxArchive> a = new pxArchive;
-    if (a->initFromUrl(url, mCORS) == RT_OK)
+    pxIViewContainer* view = viewContainer();
+    pxSceneContainer* sceneContainer = (pxSceneContainer*)view;
+    rtObjectRef parentArchive = NULL;
+    if (NULL != sceneContainer)
+    {
+      pxScene2d* scene = sceneContainer->getScene();
+      if (NULL != scene)
+      {
+        parentArchive = scene->getArchive();
+      }
+    }
+    if (a->initFromUrl(url, mCORS, parentArchive) == RT_OK)
     {
       archive = a;
       e = RT_OK;
+    }
+
+    if (false == mArchiveSet)
+    {
+      pxArchive* myArchive = (pxArchive*) a.getPtr();
+      /* decide whether further file access from this scene need to to taken from,
+      parent -> if this scene is created from archive
+      itself -> if this file itself is archive
+      */
+      if ((parentArchive != NULL ) && (((pxArchive*)parentArchive.getPtr())->isFile() == false))
+      {
+        if ((myArchive != NULL ) && (myArchive->isFile() == false))
+        {
+          mArchive = a;
+        }
+        else
+        {
+          mArchive = parentArchive;
+        }
+      }
+      else
+      {
+        mArchive = a;
+      }
+      mArchiveSet = true;
     }
     return e;
   }
@@ -1605,6 +1660,10 @@ public:
   rtError getService(rtString name, rtObjectRef& returnObject);
   rtError getService(const char* name, const rtObjectRef& ctx, rtObjectRef& service);
   rtError getAvailableApplications(rtString& availableApplications);
+  rtObjectRef getArchive()
+  {
+    return mArchive;
+  }
 
 private:
   bool bubbleEvent(rtObjectRef e, rtRef<pxObject> t, 
@@ -1662,7 +1721,7 @@ private:
 #endif
   bool mSuspended;
   rtCORSRef mCORS;
-
+  rtObjectRef mArchive;
 public:
   void hidePointer( bool hide )
   {
@@ -1676,6 +1735,7 @@ public:
   testView* mTestView;
   bool mDisposed;
   std::vector<rtFunctionRef> mServiceProviders;
+  bool mArchiveSet;
 };
 
 // TODO do we need this anymore?
