@@ -19,20 +19,8 @@
 # https://azure.microsoft.com/en-us/services/devops/pipelines/
 #
 
-jobs:
-- job: Linux
-  pool:
-    vmImage: 'ubuntu-16.04'
-  steps:
-  - script: ci/builds/ci-azure.sh
-
-
 - job: Windows
   pool:
     vmImage: 'vs2017-win2016'
   steps:
-  - task: AzurePowerShell@3
-    inputs:
-      inline: pwd
-      azurePowerShellVersion: 'latestVersion'
   - script: ci\build_win32.bat
