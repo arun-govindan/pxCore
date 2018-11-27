@@ -33,7 +33,5 @@ jobs:
   steps:
   - task: PowerShell@2
     inputs:
-      script: 
-        pwd; tree;
-        pxCore\ci\install_NSIS.ps1
+      script: pwd 
   - script: ci\build_win32.bat
