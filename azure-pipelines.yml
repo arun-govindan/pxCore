@@ -34,5 +34,5 @@ jobs:
   - task: AzurePowerShell@3
     inputs:
       inline: pwd
-      azurePowerShellVersion: azurePowerShellVersion
+      azurePowerShellVersion: 'latestVersion'
   - script: ci\build_win32.bat
