@@ -32,5 +32,4 @@ jobs:
     vmImage: 'vs2017-win2016'
   steps:
   - script: ci\install_NSIS.ps1 
-  - Powershell: ci\install_NSIS.ps1 
   - script: ci\build_win32.bat
