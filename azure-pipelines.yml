@@ -31,7 +31,7 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   steps:
-  - task: PowerShell@2
+  - task: AzurePowerShell@3
     inputs:
-      script: pwd 
+      inline: pwd 
   - script: ci\build_win32.bat
