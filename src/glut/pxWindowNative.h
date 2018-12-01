@@ -1,5 +1,21 @@
-// pxCore CopyRight 2005-2015 John Robinson
-// Portable Framebuffer and Windowing Library
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 // pxWindowNativeGlut.h
 
 #ifndef PX_WINDOW_NATIVE_GLUT_H
@@ -77,6 +93,7 @@ pxWindowNative(): mTimerFPS(0),/*, mLastWidth(-1), mLastHeight(-1),
   virtual void onMouseDown(int32_t x, int32_t y, uint32_t flags) = 0;
   virtual void onMouseUp(int32_t x, int32_t y, uint32_t flags) = 0;
 
+  virtual void onScrollWheel(float dx, float dy) = 0;
   virtual void onMouseMove(int32_t x, int32_t y) = 0;
 
   virtual void onMouseEnter() = 0;
@@ -120,6 +137,7 @@ protected:
   static void onGlutTimer(int v);
   static void onGlutDisplay();
   static void onGlutMouse(int button, int state, int x, int y);
+  static void onGlutScrollWheel(int button, int dir, int x, int y);
   static void onGlutMouseMotion(int x, int y);
   static void onGlutMousePassiveMotion(int x, int y);
   static void onGlutKeyboard(unsigned char key, int x, int y);

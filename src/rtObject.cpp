@@ -1,6 +1,6 @@
 /*
 
- rtCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -54,6 +54,8 @@ rtError rtEmit::setListener(const char* eventName, rtIFunction* f)
     e.n = eventName;
     e.f = f;
     e.isProp = true;
+    e.markForDelete = false;
+    e.fnHash = f->hash();
     mEntries.push_back(e);      
   }
   
@@ -70,7 +72,9 @@ rtError rtEmit::addListener(const char* eventName, rtIFunction* f)
        it != mEntries.end(); it++)
   {
     _rtEmitEntry& e = (*it);
-    if (e.n == eventName && e.f.getPtr() == f && !e.isProp)
+    // mHash check for javscript events callback 
+    // markForDelete check is added to handle scenario where same handler is deleted and added immediately in same handler
+    if (e.n == eventName && ((e.f.getPtr() == f) || ((f->hash() != (size_t)-1) && (e.fnHash == f->hash()) && (false == e.markForDelete))) && !e.isProp)
     {
       found = true;
       break;
@@ -82,7 +86,17 @@ rtError rtEmit::addListener(const char* eventName, rtIFunction* f)
     e.n = eventName;
     e.f = f;
     e.isProp = false;
-    mEntries.push_back(e);
+    e.markForDelete = false;
+    e.fnHash = f->hash();
+    if (!mProcessingEvents)
+    {
+      mEntries.push_back(e);
+    }
+    else
+    {
+      //save pending events to add later after current event processing is done
+      mPendingEntriesToAdd.push_back(e);
+    }
   }
   
   return RT_OK;
@@ -90,18 +104,24 @@ rtError rtEmit::addListener(const char* eventName, rtIFunction* f)
 
 rtError rtEmit::delListener(const char* eventName, rtIFunction* f)
 {
+  if (!eventName || !f)
+    return RT_ERROR;
+
   for (vector<_rtEmitEntry>::iterator it = mEntries.begin(); 
        it != mEntries.end(); it++)
   {
     _rtEmitEntry& e = (*it);
-    if (e.n == eventName && e.f.getPtr() == f && !e.isProp)
+    if (e.n == eventName && ((e.f.getPtr() == f) || (((size_t)-1 != e.fnHash) && (e.fnHash == f->hash()))) && !e.isProp)
     {
-      mEntries.erase(it);
+      // if no events is being processed currently, remove the event entries
+      if (!mProcessingEvents)
+      	mEntries.erase(it);
+      else
+        it->markForDelete = true;
       // There can only be one
       break;
     }
   }
-  
   return RT_OK;
 }
 
@@ -114,6 +134,8 @@ rtError rtEmit::Send(int numArgs, const rtValue* args, rtValue* result)
     rtLogDebug("rtEmit::Send %s", eventName.cString());
 
     vector<_rtEmitEntry>::iterator it = mEntries.begin();
+    
+    mProcessingEvents = true;
     while (it != mEntries.end())
     {
       _rtEmitEntry& e = (*it);
@@ -127,6 +149,7 @@ rtError rtEmit::Send(int numArgs, const rtValue* args, rtValue* result)
 #ifndef DISABLE_SYNC_EVENTS
         // SYNC EVENTS ... enables stopPropagation() ...
         //
+        // pass NULL as final argument for indication of asynchronous call
         err = e.f->Send(numArgs-1, args+1, &discard);
 #else
 
@@ -153,16 +176,96 @@ rtError rtEmit::Send(int numArgs, const rtValue* args, rtValue* result)
         ++it;
       }
     }
+    mProcessingEvents = false;
+    processPendingEvents();
   }
   return RT_OK;
 }
-        
+
+// function to send events asynchronously
+// don't need code for handling cases in mid of events send,as it is asynchronous
+rtError rtEmit::SendAsync(int numArgs, const rtValue* args) 
+{
+  if (numArgs > 0)
+  {
+    rtString eventName = args[0].toString();
+    rtLogDebug("rtEmit::SendAsync %s", eventName.cString());
+    vector<_rtEmitEntry>::iterator it = mEntries.begin();
+
+    while (it != mEntries.end())
+    {
+      _rtEmitEntry& e = (*it);
+      if (e.n == eventName)
+      {
+        rtError err;
+        err = e.f->Send(numArgs-1, args+1, NULL);
+        if (err != RT_OK)
+          rtLogInfo("failed to send. %s", rtStrError(err));
+
+        // EPIPE means it's disconnected
+        if (err == rtErrorFromErrno(EPIPE) || err == RT_ERROR_STREAM_CLOSED)
+        {
+          rtLogInfo("removing entry from remote client");
+          it = mEntries.erase(it);
+        }
+        else
+        {
+          ++it;
+        }
+      }
+      else
+      {
+        ++it;
+      }
+    }
+    processPendingEvents();
+  }
+  return RT_OK;
+}
+
+// function to process pending events to get deleted or added
+void rtEmit::processPendingEvents()
+{
+  vector<_rtEmitEntry>::iterator it = mEntries.begin();
+  while (it != mEntries.end())
+  {
+    if (true == it->markForDelete)
+    {
+      it = mEntries.erase(it);
+    }
+    else
+    {
+      ++it;
+    }
+  }
+
+  vector<_rtEmitEntry>::iterator pendingit = mPendingEntriesToAdd.begin();
+  while (pendingit != mPendingEntriesToAdd.end())
+  {
+    _rtEmitEntry& src = (*pendingit);
+    _rtEmitEntry dest;
+    dest.n = src.n;
+    dest.f = src.f;
+    dest.isProp = src.isProp;
+    dest.markForDelete = src.markForDelete;
+    dest.fnHash = src.fnHash;
+
+    mEntries.push_back(dest);
+    ++pendingit;
+  }
+  mPendingEntriesToAdd.clear();
+}
+
 // rtEmitRef
 rtError rtEmitRef::Send(int numArgs,const rtValue* args,rtValue* result) 
 {
   return (*this)->Send(numArgs, args, result);
 }
 
+rtError rtEmitRef::SendAsync(int numArgs,const rtValue* args)
+{
+  return (*this)->SendAsync(numArgs, args);
+}
 // rtArrayObject
 void rtArrayObject::empty()
 {
@@ -243,6 +346,12 @@ rtError rtMapObject::Get(const char* name, rtValue* value) const
   {
     *value = it->v;
     return RT_OK;
+  }
+  else if (!strcmp(name, "description"))
+  {
+    // TODO UGH... need to rework these meta properties
+    // change decription to a property and probably put a prefix on it
+    return rtObject::Get(name, value);
   }
   else if (!strcmp(name, "allKeys"))
   {
@@ -492,6 +601,12 @@ rtError rtFunctionBase::send()
   return Send(0, 0, NULL);
 }
 
+rtError rtFunctionBase::sendAsync(const rtValue& arg1, const rtValue& arg2)
+{
+  rtValue args[2] = {arg1, arg2};
+  return SendAsync(2, args);
+}
+
 rtError rtFunctionBase::send(const rtValue& arg1)
 {
   rtValue args[1] = {arg1};
@@ -543,6 +658,12 @@ rtError rtFunctionBase::send(const rtValue& arg1, const rtValue& arg2,
   return Send(7, args);
 }
 
+rtError rtFunctionBase::SendAsync(int numArgs, const rtValue* args)
+{
+  UNUSED_PARAM(numArgs);
+  UNUSED_PARAM(args);
+  return RT_OK;
+}
 
 rtError rtObjectRef::Get(const char* name, rtValue* value) const
 {
@@ -621,7 +742,6 @@ rtError rtObject::allKeys(rtObjectRef& v) const
   return RT_OK;
 }
 
-
 #if 0
 // TODO
 rtError rtAlloc(const char* objectName, rtObjectRef& object) 
@@ -638,4 +758,5 @@ rtDefineMethod(rtObject, init);
 rtDefineObject(rtArrayObject, rtObject);
 rtDefineProperty(rtArrayObject, length);
 
+rtDefineObject(rtMapObject, rtObject);
 

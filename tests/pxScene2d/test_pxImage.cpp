@@ -1,3 +1,21 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #include <sstream>
 
 #define private public
@@ -23,8 +41,10 @@ class MockImageResource : public rtImageResource {
 
     MockImageResource(const char* url = 0) { setUrl(IMAGE_URL); UNUSED_PARAM(url); }
 
-    rtError w(int32_t& v) const { v = IMAGE_WIDTH; return RT_OK;}
-    rtError h(int32_t& v) const { v = IMAGE_HEIGHT; return RT_OK; }
+    rtError w(int32_t& v) const override { v = IMAGE_WIDTH; return RT_OK;}
+    rtError h(int32_t& v) const override { v = IMAGE_HEIGHT; return RT_OK; }
+    int32_t w() const override { return IMAGE_WIDTH;}
+    int32_t h() const override { return IMAGE_HEIGHT;}
     rtError description(rtString& d) const { d = "rtImageResource"; return RT_OK; }
 };
 
@@ -94,6 +114,29 @@ class pxImageTest : public testing::Test
         EXPECT_TRUE(pImage->getOnscreenHeight() == IMAGE_HEIGHT * 3);
     }
 
+    void pxImageCreateFailedTest()
+    {
+      pxScene2d* scene = mScene.getPtr();
+      scene->mDisposed = true;
+      rtObjectRef param;
+      rtObjectRef img;
+      EXPECT_TRUE(RT_FAIL == scene->create(param, img));
+      scene->mDisposed = false;
+    }
+
+    void pxImageLoadFromArchiveTest()
+    {
+      pxScene2d* scene = new pxScene2d();
+      rtObjectRef archive;
+      EXPECT_TRUE(RT_OK == scene->loadArchive("supportfiles/test_arc_resources.jar", archive));
+      pxImage* image = new pxImage(scene);
+      image->setUrl("images/status_bg.svg");
+      rtString key("supportfiles/test_arc_resources.jar_images/status_bg.svg");
+      ImageMap::iterator it = pxImageManager::mImageMap.find(key.cString());
+      EXPECT_TRUE (it != pxImageManager::mImageMap.end());
+      rtString name = (((pxResource*)(image->mResource.getPtr()))->mName);
+      EXPECT_TRUE (strcmp(name.cString(), "supportfiles/test_arc_resources.jar_images/status_bg.svg") == 0);
+    }
     pxScene2dRef mScene;
     rtObjectRef mImage;
 };
@@ -102,4 +145,90 @@ TEST_F(pxImageTest, pxImageCompleteTest)
 {
     pxImageOnScreenWidthTest();
     pxImageOnScreenHeightTest();
+    pxImageCreateFailedTest();
+    pxImageLoadFromArchiveTest();
 }
+
+class rtImageResourceTest : public testing::Test
+{
+  public:
+    virtual void SetUp()
+    {
+    }
+
+    virtual void TearDown()
+    {
+    }
+
+    void rtImageResourceLoadFromArchiveSuccessTest()
+    {
+      rtImageResource res("images/status_bg.svg");
+      pxScene2d* scene = new pxScene2d();
+      rtObjectRef archive;
+      EXPECT_TRUE(RT_OK == scene->loadArchive("supportfiles/test_arc_resources.jar", archive));
+      res.loadResourceFromArchive(scene->getArchive());
+      rtObjectRef loadStatus = new rtMapObject;
+      res.loadStatus(loadStatus);
+      rtValue status;
+      loadStatus.Get("statusCode",&status);
+      EXPECT_TRUE(status == PX_RESOURCE_STATUS_OK);
+      rtString key("supportfiles/test_arc_resources.jar_images/status_bg.svg");
+      ImageMap::iterator it = pxImageManager::mImageMap.find(key.cString());
+      EXPECT_TRUE (it != pxImageManager::mImageMap.end());
+      delete scene;
+    }
+
+    void rtImageResourceLoadFromArchiveFailureTest()
+    {
+      rtImageResource res("images/status_bg1.svg");
+      pxScene2d* scene = new pxScene2d();
+      rtObjectRef archive;
+      EXPECT_TRUE(RT_OK == scene->loadArchive("supportfiles/test_arc_resources.jar", archive));
+      res.loadResourceFromArchive(scene->getArchive());
+      rtObjectRef loadStatus = new rtMapObject;
+      res.loadStatus(loadStatus);
+      rtValue status;
+      loadStatus.Get("statusCode",&status);
+      EXPECT_TRUE(status == PX_RESOURCE_STATUS_FILE_NOT_FOUND);
+      delete scene;
+    }
+};
+
+TEST_F(rtImageResourceTest, rtImageResourcesTest)
+{
+    rtImageResourceLoadFromArchiveSuccessTest();
+    rtImageResourceLoadFromArchiveFailureTest();
+}
+
+class rtImageAResourceTest : public testing::Test
+{
+  public:
+    virtual void SetUp()
+    {
+    }
+
+    virtual void TearDown()
+    {
+    }
+
+    void rtImageAResourceLoadFromArchiveTest()
+    {
+      rtImageAResource res("images/status_bg.svg");
+      pxScene2d* scene = new pxScene2d();
+      rtObjectRef archive;
+      EXPECT_TRUE(RT_OK == scene->loadArchive("supportfiles/test_arc_resources.jar", archive));
+      res.loadResourceFromArchive(scene->getArchive());
+      rtObjectRef loadStatus = new rtMapObject;
+      res.loadStatus(loadStatus);
+      rtValue status;
+      loadStatus.Get("statusCode",&status);
+      EXPECT_TRUE(status == PX_RESOURCE_STATUS_UNKNOWN_ERROR);
+      delete scene;
+    }
+};
+
+TEST_F(rtImageAResourceTest, rtImageAResourcesTest)
+{
+    rtImageAResourceLoadFromArchiveTest();
+}
+

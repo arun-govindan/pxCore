@@ -1,3 +1,21 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #include "rtRemoteServer.h"
 #include "rtRemoteCorrelationKey.h"
 #include "rtRemoteEnvironment.h"
@@ -315,10 +333,6 @@ rtRemoteServer::runListener()
 {
   time_t lastKeepAliveCheck = 0;
 
-  rtRemoteSocketBuffer buff;
-  buff.reserve(1024 * 1024);
-  buff.resize(1024 * 1024);
-
   while (true)
   {
     int maxFd = 0;
@@ -454,7 +468,7 @@ rtRemoteServer::processMessage(std::shared_ptr<rtRemoteClient>& client, rtRemote
   auto itr = m_command_handlers.find(msgType);
   if (itr == m_command_handlers.end())
   {
-    rtLogWarn("no command handler for:%s", msgType);
+    rtLogError("processMessage: no command handler for:%s. RT_ERROR_PROTOCOL_ERROR", msgType);
     return RT_ERROR_PROTOCOL_ERROR;
   }
 
@@ -645,6 +659,13 @@ rtRemoteServer::openRpcListener()
     unAddr->sun_family = AF_UNIX;
     strncpy(unAddr->sun_path, path, UNIX_PATH_MAX);
   }
+  else if (m_env->Config->server_listen_interface() != "lo")
+  {
+      rtError e = rtParseAddress(m_rpc_endpoint, m_env->Config->server_listen_interface().c_str(), 0, nullptr);
+      if (e != RT_OK)
+          rtGetDefaultInterface(m_rpc_endpoint, 0);
+  }
+
   else
   {
     rtGetDefaultInterface(m_rpc_endpoint, 0);
@@ -761,7 +782,7 @@ rtRemoteServer::onGet(std::shared_ptr<rtRemoteClient>& client, rtRemoteMessagePt
     rtError err = RT_OK;
     rtValue value;
 
-    uint32_t    index;
+    uint32_t    index = 0;
     char const* name = rtMessage_GetPropertyName(*doc);
 
     if (name)

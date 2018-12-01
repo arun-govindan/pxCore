@@ -82,6 +82,10 @@
     [NSApp          setWindowsMenu: fileMenu];
     [fileMenuItem setSubmenu: fileMenu];
     
+    [fileMenu addItemWithTitle: @"New Window"
+                        action: @selector(newWindow:)
+                 keyEquivalent: @"n"];
+    
     [fileMenu addItemWithTitle: @"Miniaturize"
                         action: @selector(performMiniaturize:)
                  keyEquivalent: @"m"];
@@ -124,6 +128,37 @@
   
     [editMenu release];
   
+    
+    // VIEW ---------------------------------------------------------------------------------
+    
+    NSMenuItem *viewMenuItem =
+    [bar addItemWithTitle:@"" action:NULL keyEquivalent:@""];
+    
+    NSMenu *viewMenu = [[NSMenu alloc] initWithTitle:@"View"];
+    
+    [NSApp    setWindowsMenu: viewMenu];
+    [viewMenuItem setSubmenu: viewMenu];
+    
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+  
+    [[viewMenu addItemWithTitle: @"Toggle Address Bar"
+                         action: @selector(toggleAddressBar:)
+                  keyEquivalent: @"f"]
+     setKeyEquivalentModifierMask:NSControlKeyMask | NSAlternateKeyMask];
+  
+#pragma clang diagnostic pop  
+
+    [viewMenu addItem:[NSMenuItem separatorItem]]; // -----------
+
+  
+    [[viewMenu addItemWithTitle: @"Enter Full Screen"
+                        action: @selector(toggleFullScreen:)
+                 keyEquivalent: @"f"]
+       setKeyEquivalentModifierMask:NSControlKeyMask | NSCommandKeyMask];
+        
+    [viewMenu release];
+    
     // WINDOW ---------------------------------------------------------------------------------
     
     NSMenuItem *windowMenuItem =

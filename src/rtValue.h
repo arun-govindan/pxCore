@@ -1,9 +1,6 @@
-// rtCore CopyRight 2007-2015 John Robinson
-// rtValue.h
-
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,6 +16,7 @@
 
 */
 
+// rtValue.h
 #ifndef RT_VALUE_H
 #define RT_VALUE_H
 
@@ -150,7 +148,7 @@ class rtValue
   finline int8_t     toInt8()     const { int8_t v;      getInt8(v);   return v; }
   finline uint8_t    toUInt8()    const { uint8_t v;     getUInt8(v);  return v; }
   finline int32_t    toInt32()    const { int32_t v;     getInt32(v);  return v; }
-  finline uint32_t   toUInt32()   const { int32_t v;     getInt32(v);  return v; }
+  finline uint32_t   toUInt32()   const { uint32_t v(0); getUInt32(v); return v; }
   finline int64_t    toInt64()    const { int64_t v(0);  getInt64(v);  return v; }
   finline uint64_t   toUInt64()   const { uint64_t v(0); getUInt64(v); return v; }
   finline float      toFloat()    const { float v;       getFloat(v);  return v; }

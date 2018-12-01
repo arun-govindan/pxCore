@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -49,19 +49,34 @@ public:
   rtString(const rtString& s);
   
   ~rtString();
-  
+
   rtString& operator=(const rtString& s);
   rtString& operator=(const char* s);
 
+  friend
+  rtString operator+(const rtString& lhs, const char *rhs)
+  {
+    rtString ans(lhs);
+    ans = ans.append(rhs);
+    return ans;
+  }
+
+  rtString& operator +(const char* s)     { return append(s);           };
+  rtString& operator +(const rtString& s) { return append(s.cString()); };
+  rtString& operator+=(const char* s)     { return append(s);           };
+  rtString& operator+=(const rtString& s) { return append(s.cString()); };
+  
   /**
    * Determines if the string is empty.
    * @returns true if string length is zero or is null
    */
   bool isEmpty() const;
 
+  rtString& init(const char* s, size_t byteLen);
+
   void term();
 
-  void append(const char* s);
+  rtString&  append(const char* s);
 
   int compare(const char* s) const;
 
@@ -96,6 +111,7 @@ public:
   finline bool operator>= (const char* s) const { return compare(s) >= 0; }
 
   bool beginsWith(const char* s) const;
+  bool endsWith(const char* s) const;
 
   rtString substring(size_t pos, size_t len = 0) const;
 

@@ -1,3 +1,21 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #include <list>
 #include <sstream>
 
@@ -26,10 +44,19 @@
 #endif
 
 using namespace std;
-bool failRealloc = false;
 bool defaultCallbackExecuted = false;
 extern void startFileDownloadInBackground(void* data);
 extern bool continueDownloadHandleCheck;
+
+// disabled as it causes crash
+// please note that realloc is also extensively
+// used by various glibc functions/threads
+// also on linux even if the malloc/realloc returns non-null
+// it doesn't guarantee that the returned memory will be available.
+// #define UNAVAILABLE_MEMORY_TEST_ENABLED
+
+#ifdef UNAVAILABLE_MEMORY_TEST_ENABLED // {
+bool failRealloc = false;
 typedef void* (*realloc_t)(void*, size_t);
 
 void* realloc(void *ptr, size_t size)
@@ -48,6 +75,7 @@ void* realloc(void *ptr, size_t size)
   }
   return NULL;
 }
+#endif // } UNAVAILABLE_MEMORY_TEST_ENABLED
 
 class commonTestFns
 {
@@ -331,7 +359,7 @@ class rtHttpCacheTest : public testing::Test, public commonTestFns
     {
     }
 
-    void populateCacheHeader (rtString& outheader, char* cacheControl, bool isEtagPresent=true, bool isExpired=false)
+    void populateCacheHeader (rtString& outheader, const char* cacheControl, bool isEtagPresent=true, bool isExpired=false)
     {
       outheader.append(defaultCacheHeader);
       if (isEtagPresent)
@@ -481,8 +509,8 @@ class rtHttpCacheTest : public testing::Test, public commonTestFns
       const char* cacheData = "abcde";
       rtHttpCacheData data("http://fileserver/test.jpeg",cacheHeader.cString(),cacheData,strlen(cacheData));
       rtData newData;
-      char* newcontents = "pqrstu";
-      newData.init((uint8_t*)newcontents,strlen(newcontents));
+      const char* newcontents = "pqrstu";
+      newData.init((const uint8_t *)newcontents,strlen(newcontents));
       data.setData(newData);
       rtData& storedData = data.contentsData();
       EXPECT_TRUE ( strcmp("pqrstu",(const char*)storedData.data()) == 0);
@@ -595,7 +623,7 @@ class rtHttpCacheTest : public testing::Test, public commonTestFns
      rtHttpCacheData data("http://fileserver/test.jpeg");
      rtFileCache::instance()->httpCacheData("http://fileserver/test.jpeg",data);
      rtData contents;
-     EXPECT_TRUE (RT_ERROR == data.data(contents));
+     EXPECT_TRUE (RT_OK == data.data(contents));
    }
 
    void mustRevalidateTruenocacheUnExpiredTest()
@@ -698,9 +726,10 @@ class rtHttpCacheTest : public testing::Test, public commonTestFns
      rtHttpCacheData data("http://fileserver/testEtagFail");
      rtFileCache::instance()->httpCacheData("http://fileserver/testEtagFail",data);
      rtData contents;
-     EXPECT_TRUE (RT_ERROR == data.data(contents));
+     EXPECT_TRUE (RT_OK == data.data(contents));
     }
 
+#ifdef UNAVAILABLE_MEMORY_TEST_ENABLED // {
     void memoryUnAvailableTest()
     {
       rtString cacheHeader("");
@@ -716,7 +745,37 @@ class rtHttpCacheTest : public testing::Test, public commonTestFns
       EXPECT_TRUE (false == data.readFileData());
       failRealloc = false;
     }
- 
+#endif // } UNAVAILABLE_MEMORY_TEST_ENABLED
+
+    void handleDownloadRequest404Test()
+    {
+      rtHttpCacheData data("http://www.pxscene.org/examples/px-reference/gallery/fancy1.js");
+      vector<rtString> headers;
+      bool ret = data.handleDownloadRequest(headers,true);
+      EXPECT_TRUE(false == ret); 
+    }
+  
+    void handleDownloadRequestProperTest()
+    {
+      rtHttpCacheData data("http://www.pxscene.org/examples/px-reference/gallery/fancy.js");
+      vector<rtString> headers;
+      bool ret = data.handleDownloadRequest(headers,true);
+      EXPECT_TRUE(true == ret); 
+    }
+
+    void filePointerTest()
+    {
+      rtHttpCacheData data("http://www.pxscene.org/examples/px-reference/gallery/fancy.js");
+      EXPECT_TRUE(NULL == data.filePointer());
+    }
+
+    void deferCacheReadFailTest()
+    {
+      rtData d;
+      rtHttpCacheData data("http://www.pxscene.org/examples/px-reference/gallery/fancy.js");
+      EXPECT_TRUE(RT_ERROR == data.deferCacheRead(d));
+    }
+
     private:
       rtString defaultCacheHeader;
 };
@@ -753,7 +812,13 @@ TEST_F(rtHttpCacheTest, httpCacheCompleteTest)
   dataUpdatedAfterEtagTest();
 */
   dataUpdatedAfterEtagDownloadFailedTest();
+#ifdef UNAVAILABLE_MEMORY_TEST_ENABLED // {
   memoryUnAvailableTest();
+#endif // } UNAVAILABLE_MEMORY_TEST_ENABLED
+  handleDownloadRequest404Test();
+  handleDownloadRequestProperTest();
+  filePointerTest();
+  deferCacheReadFailTest();
 }
 
 class rtFileDownloaderTest : public testing::Test, public commonTestFns
@@ -765,7 +830,7 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
       fixedHeader = "HTTP/1.1 200 OK\nDate: Sun, 09 Oct 2016 21:22:50 GMT\nServer: Apache/2.4.7 (Ubuntu)\nLast-Modified: Sat, 08 Oct 2017 02:46:40 GMT\nAccept-Ranges: bytes\nContent-Length: 4020\nCache-Control: public\nContent-Type: image/jpeg\n";
       fixedHeader.append(mNonExpireDate);
       fixedData = "<html><body>Hi</body></html>";
-      testSem = sem_open("/semaphore", O_CREAT, 0644, 1);
+      testSem = sem_open("/semaphore", O_CREAT, 0644, 0);
       expectedStatusCode = 0;
       expectedHttpCode = 0;
       expectedCachePresence = false;
@@ -849,6 +914,34 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
       //EXPECT_TRUE (RT_OK ==rtFileCache::instance()->httpCacheData("https://px-apps.sys.comcast.net/pxscene-samples/images/tiles/008.jpg",data));
     }
 
+    #define DEFER_CACHE_BUFFER_SIZE 	 (16*1024) // 16 K Added similar to CURL_MAX_WRITE_SIZE (the usual default is 16K)
+    void setDeferCacheReadTest()
+    {
+      // TODO TESTS images files downloaded from pxscene-samples need expiry date
+      rtFileCache::instance()->clearCache();
+      rtFileDownloadRequest* request = new rtFileDownloadRequest("https://px-apps.sys.comcast.net/pxscene-samples/images/tiles/008.jpg",this);
+      request->setCallbackFunction(rtFileDownloaderTest::downloadCallbackForDeferCache);
+      request->setDeferCacheRead(true);
+      request->setCachedFileReadSize(DEFER_CACHE_BUFFER_SIZE);
+      expectedStatusCode = 0;
+      expectedHttpCode = 200;
+      expectedCachePresence = false;
+      rtFileDownloader::instance()->downloadFile(request);
+      sem_wait(testSem);
+    }
+
+    void setUseCallbackDataSizeTest()
+    {
+      // TODO TESTS images files downloaded from pxscene-samples need expiry date
+      rtFileCache::instance()->clearCache();
+      rtFileDownloadRequest* request = new rtFileDownloadRequest("https://px-apps.sys.comcast.net/pxscene-samples/images/tiles/008.jpg",this);
+      request->setCallbackFunction(rtFileDownloaderTest::downloadCallbackForUseCallbackDataSize);
+      request->setDownloadProgressCallbackFunction(rtFileDownloaderTest::downloadProgressCallbackForUseCallbackDataSize, this);
+      request->setUseCallbackDataSize(true);
+      rtFileDownloader::instance()->downloadFile(request);
+      sem_wait(testSem);
+    }
+
     void checkAndDownloadFromNetworkSuccess()
     {
       rtFileCache::instance()->clearCache();
@@ -871,12 +964,16 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
     void disableCacheTest()
     {
       rtFileCache::instance()->clearCache();
-      addDataToCache("http://fileserver/file_notfound.jpeg",getHeader(),getBodyData(),fixedData.length());
-      rtFileDownloadRequest* request = new rtFileDownloadRequest("http://fileserver/file_notfound.jpeg",this);
+      const char *url = "http://fileserver/file_notfound.jpeg";
+      rtFileDownloadRequest* request = new rtFileDownloadRequest(url,this);
       request->setCacheEnabled(false);
       request->setCallbackFunction(NULL);
       rtFileDownloader::instance()->downloadFile(request);
-      EXPECT_TRUE (request->isDataCached() == false);
+      // Once downloadFile() finished 'request' is deleted
+      // EXPECT_TRUE (request->isDataCached() == false);
+      rtHttpCacheData cachedData(url);
+      rtError ret = rtFileCache::instance()->httpCacheData(url, cachedData);
+      EXPECT_TRUE(ret == RT_ERROR);
     }
 
     void startFileDownloadInBackgroundTest()
@@ -925,7 +1022,8 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
     void setCallbackFunctionThreadSafeTest()
     {
       rtFileDownloadRequest* request = new rtFileDownloadRequest("",this);
-      request->setCallbackFunctionThreadSafe(rtFileDownloaderTest::downloadCallback);
+      rtFileDownloader::addFileDownloadRequest(request);
+      rtFileDownloader::setCallbackFunctionThreadSafe(request, rtFileDownloaderTest::downloadCallback, this);
       expectedStatusCode = 0;
       expectedCachePresence = false;
       expectedHttpCode = 0;
@@ -936,7 +1034,7 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
     void setCallbackFunctionNullTest()
     {
       rtFileDownloadRequest* request = new rtFileDownloadRequest("",this);
-      request->setCallbackFunctionThreadSafe(NULL);
+      rtFileDownloader::setCallbackFunctionThreadSafe(request, NULL, this);
       EXPECT_TRUE (request->executeCallback(0) == false);
     }
 
@@ -945,7 +1043,7 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
       void (*callbackFunction)(rtFileDownloadRequest*);
       callbackFunction = rtFileDownloader::instance()->mDefaultCallbackFunction;
       rtFileDownloadRequest* request = new rtFileDownloadRequest("http://fileserver/file.jpeg",this);
-      request->setCallbackFunctionThreadSafe(NULL);
+      rtFileDownloader::setCallbackFunctionThreadSafe(request, NULL, this);
       rtFileDownloader::instance()->setDefaultCallbackFunction(rtFileDownloaderTest::defaultDownloadCallback);
       rtFileDownloader::instance()->downloadFile(request);
       sem_wait(testSem);
@@ -956,22 +1054,28 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
 
     void setDefaultCallbackFunctionNullTest()
     {
+      const char *url = "http://fileserver/file.jpeg";
       rtFileCache::instance()->clearCache();
-      addDataToCache("http://fileserver/file.jpeg",getHeader(),getBodyData(),fixedData.length());
+      addDataToCache(url,getHeader(),getBodyData(),fixedData.length());
       void (*callbackFunction)(rtFileDownloadRequest*);
       callbackFunction = rtFileDownloader::instance()->mDefaultCallbackFunction;
-      rtFileDownloadRequest* request = new rtFileDownloadRequest("http://fileserver/file.jpeg",this);
+      rtFileDownloadRequest* request = new rtFileDownloadRequest(url,this);
       request->setCallbackFunction(NULL);
       rtFileDownloader::instance()->setDefaultCallbackFunction(NULL);
       rtFileDownloader::instance()->downloadFile(request);
-      EXPECT_TRUE (true == request->isDataCached());
+      // Once downloadFile() finished 'request' is deleted
+      // EXPECT_TRUE (true == request->isDataCached());
+      rtHttpCacheData cachedData(url);
+      rtError ret = rtFileCache::instance()->httpCacheData(url, cachedData);
+      EXPECT_TRUE(ret == RT_OK);
       rtFileDownloader::instance()->setDefaultCallbackFunction(callbackFunction);
     }
 
     void setCallbackDataTest()
     {
       rtFileDownloadRequest* request = new rtFileDownloadRequest("",NULL);
-      request->setCallbackFunctionThreadSafe(rtFileDownloaderTest::downloadCallback);
+      rtFileDownloader::addFileDownloadRequest(request);
+      rtFileDownloader::setCallbackFunctionThreadSafe(request, rtFileDownloaderTest::downloadCallback, NULL);
       request->setCallbackData(this);
       expectedStatusCode = 0;
       expectedCachePresence = false;
@@ -987,35 +1091,17 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
       EXPECT_TRUE (request->downloadHandleExpiresTime() == 3);
     }
 
-    void downloadedDataTest()
-    {
-      rtFileCache::instance()->clearCache();
-      addDataToCache("http://fileserver/file.jpeg",getHeader(),getBodyData(),fixedData.length());
-      rtFileDownloadRequest* request = new rtFileDownloadRequest("http://fileserver/file.jpeg",this);
-      expectedStatusCode = 0;
-      expectedCachePresence = true;
-      expectedHttpCode = 200;
-      rtFileDownloader::instance()->downloadFile(request);
-      char *data = new char [1000];
-      size_t size = 0;
-      memset (data, 0, 1000);
-      request->downloadedData(data, size);
-      //since the data would have been consumed by callback
-      EXPECT_TRUE (size == 0);
-      delete[] data;
-      sem_wait(testSem);
-    }
-
     void addToDownloadQueueTest()
     {
       rtFileCache::instance()->clearCache();
       addDataToCache("http://fileserver/file.jpeg",getHeader(),getBodyData(),fixedData.length());
-      rtFileDownloadRequest* request = new rtFileDownloadRequest("http://fileserver/file.jpeg",this);
-      request->setCallbackFunctionThreadSafe(rtFileDownloaderTest::downloadCallback);
-      rtFileDownloader::instance()->addToDownloadQueue(request);
       expectedStatusCode = 0;
       expectedHttpCode = 200;
       expectedCachePresence = true;
+      rtFileDownloadRequest* request = new rtFileDownloadRequest("http://fileserver/file.jpeg",this);
+      request->setCallbackFunction(rtFileDownloaderTest::downloadCallback);
+      request->setCallbackData(this);
+      rtFileDownloader::instance()->addToDownloadQueue(request);
       sem_wait(testSem);
     }
 
@@ -1028,13 +1114,14 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
     void raiseDownloadPriorityTest()
     {
       rtFileCache::instance()->clearCache();
-      rtFileDownloadRequest* request = new rtFileDownloadRequest("http://fileserver/file.jpeg",this);
-      request->setCallbackFunctionThreadSafe(rtFileDownloaderTest::downloadCallback);
-      rtFileDownloader::instance()->addToDownloadQueue(request);
-      rtFileDownloader::instance()->raiseDownloadPriority(request);
       expectedStatusCode = 6;
       expectedHttpCode = 0;
       expectedCachePresence = false;
+      rtFileDownloadRequest* request = new rtFileDownloadRequest("http://fileserver/file.jpeg",this);
+      request->setCallbackFunction(rtFileDownloaderTest::downloadCallback);
+      request->setCallbackData(this);
+      rtFileDownloader::instance()->addToDownloadQueue(request);
+      rtFileDownloader::instance()->raiseDownloadPriority(request);
       sem_wait(testSem);
     }
 
@@ -1056,14 +1143,14 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
       //todo more actions once clearFileCache() is implemented
       rtFileDownloader::instance()->clearFileCache();
     }
-   
+
     void setHTTPFailOnErrorTest()
     {
       rtFileDownloadRequest req("http://fileserver/notfound",NULL);
       req.setHTTPFailOnError(true);
       EXPECT_TRUE (req.isHTTPFailOnError() == true);
     }
-  
+
     void setHTTPErrorTest()
     {
       rtFileDownloadRequest req("http://fileserver/notfound",NULL);
@@ -1077,7 +1164,86 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
       req.setCurlDefaultTimeout(true);
       EXPECT_TRUE (req.isCurlDefaultTimeoutSet() == true);
     }
- 
+
+    // download progress test begins
+    void setDownloadProgressCallbackFunctionTest()
+    {
+      rtFileCache::instance()->clearCache();
+      rtFileDownloadRequest request("https://px-apps.sys.comcast.net/pxscene-samples/images/tiles/008.jpg",this);
+      request.setDownloadProgressCallbackFunction(rtFileDownloaderTest::downloadProgressCallback, this);
+      EXPECT_TRUE (request.mDownloadProgressCallbackFunction == &rtFileDownloaderTest::downloadProgressCallback);
+      EXPECT_TRUE (request.mDownloadProgressUserPtr == this);
+    }
+
+    void executeDownloadProgressCallbackPresentTest()
+    {
+      size_t size = 0, nmemb = 0;
+      rtFileCache::instance()->clearCache();
+      rtFileDownloadRequest request("https://px-apps.sys.comcast.net/pxscene-samples/images/tiles/008.jpg",this);
+      request.setDownloadProgressCallbackFunction(rtFileDownloaderTest::downloadProgressCallback, this);
+      EXPECT_TRUE ((size * nmemb) == request.executeDownloadProgressCallback(NULL, size, nmemb));
+    }
+
+    void executeDownloadProgressCallbackAbsentTest()
+    {
+      rtFileCache::instance()->clearCache();
+      rtFileDownloadRequest request("https://px-apps.sys.comcast.net/pxscene-samples/images/tiles/008.jpg",this);
+      EXPECT_TRUE (false == request.executeDownloadProgressCallback(NULL, 0, 0));
+    }
+
+    void setDataIsCachedTest()
+    {
+      rtFileCache::instance()->clearCache();
+      rtFileDownloadRequest req("http://fileserver/notfound",NULL);
+      req.setDataIsCached(false);
+      EXPECT_TRUE (req.isDataCached() == false);
+      req.setDataIsCached(true);
+      EXPECT_TRUE (req.isDataCached() == true);
+    }
+    // download progress test ends
+
+    static void downloadCallbackForDeferCache(rtFileDownloadRequest* fileDownloadRequest)
+    {
+      rtHttpCacheData cachedData;
+      if (fileDownloadRequest != NULL && fileDownloadRequest->callbackData() != NULL)
+      {
+        rtFileDownloaderTest* callbackData = (rtFileDownloaderTest*) fileDownloadRequest->callbackData();
+        EXPECT_TRUE (callbackData->expectedHttpCode == fileDownloadRequest->httpStatusCode());
+        EXPECT_TRUE (callbackData->expectedStatusCode ==  fileDownloadRequest->downloadStatusCode());
+        EXPECT_TRUE (callbackData->expectedCachePresence == rtFileDownloader::instance()->checkAndDownloadFromCache(fileDownloadRequest,cachedData));
+        if(fileDownloadRequest->isDataCached())
+        {
+		  char* invalidData;
+          size_t dataSizeFromDeferCache = 0;
+
+          fileDownloadRequest->downloadedData(invalidData, dataSizeFromDeferCache);
+
+          fileDownloadRequest->setDeferCacheRead(false);
+          rtHttpCacheData cachedData(fileDownloadRequest->fileUrl().cString());
+          if (true == rtFileDownloader::instance()->checkAndDownloadFromCache(fileDownloadRequest,cachedData))
+          {
+            char* data;
+            size_t dataSize = 0;
+
+            fileDownloadRequest->downloadedData(data, dataSize);
+            EXPECT_TRUE (dataSize == dataSizeFromDeferCache);
+          }
+        }
+        sem_post(callbackData->testSem);
+      }
+    }
+
+    static void downloadCallbackForUseCallbackDataSize(rtFileDownloadRequest* fileDownloadRequest)
+    {
+      rtHttpCacheData cachedData;
+      if (fileDownloadRequest != NULL && fileDownloadRequest->callbackData() != NULL)
+      {
+        rtFileDownloaderTest* callbackData = (rtFileDownloaderTest*) fileDownloadRequest->callbackData();
+        EXPECT_TRUE ( false == fileDownloadRequest->isDataCached());
+        sem_post(callbackData->testSem);
+      }
+    }
+
     static void downloadCallback(rtFileDownloadRequest* fileDownloadRequest)
     {
       rtHttpCacheData cachedData;
@@ -1102,6 +1268,25 @@ class rtFileDownloaderTest : public testing::Test, public commonTestFns
       }
     }
 
+    static size_t downloadProgressCallbackForUseCallbackDataSize(void *ptr, size_t size, size_t nmemb, void *userData)
+    {
+      // Lets consider an example of due to user/caller interuption this callback consumed only half of the data.
+      int consumed= (size*nmemb)/2;
+      UNUSED_PARAM (ptr);
+      UNUSED_PARAM(userData);
+
+      return consumed;
+    }
+
+    static size_t downloadProgressCallback(void *ptr, size_t size, size_t nmemb, void *userData)
+    {
+      UNUSED_PARAM (ptr);
+      UNUSED_PARAM (size);
+      UNUSED_PARAM (nmemb);
+      UNUSED_PARAM (userData);
+      return 0;
+    }
+
   private:
     int expectedStatusCode;
     int expectedHttpCode;
@@ -1119,6 +1304,8 @@ TEST_F(rtFileDownloaderTest, checkCacheTests)
   downloadFileCacheDataProperAvailableTest();
   disableCacheTest();
   downloadFileAddToCacheTest();
+  setDeferCacheReadTest();
+  setUseCallbackDataSizeTest();
   checkAndDownloadFromNetworkSuccess();
   checkAndDownloadFromNetworkFailure();
   startFileDownloadInBackgroundTest();
@@ -1129,16 +1316,20 @@ TEST_F(rtFileDownloaderTest, checkCacheTests)
   setCallbackFunctionNullTest();
   setCallbackDataTest();
   setDownloadHandleExpiresTimeTest();
-  downloadedDataTest();
   addToDownloadQueueTest();
   setCallbackFunctionNullInDownloadFileTest();
   setDefaultCallbackFunctionNullTest();
   startNextDownloadInBackgroundTest();
-  raiseDownloadPriorityTest();
+  // commenting out because it is difficult to maintain hold of download requests before raising priority
+  //raiseDownloadPriorityTest();
   nextDownloadRequestTest();
   removeDownloadRequestTest();
   setHTTPFailOnErrorTest();
   setHTTPErrorTest();
   setCurlDefaultTimeoutTest();
+  setDownloadProgressCallbackFunctionTest();
+  executeDownloadProgressCallbackPresentTest();
+  executeDownloadProgressCallbackAbsentTest();
+  setDataIsCachedTest();
   clearFileCacheTest();
 }

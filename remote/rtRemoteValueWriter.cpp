@@ -1,5 +1,24 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #include "rtRemoteValueWriter.h"
 #include "rtRemoteObject.h"
+#include "rtRemoteFunction.h"
 #include "rtRemoteObjectCache.h"
 #include "rtRemoteConfig.h"
 #include "rtRemoteMessage.h"
@@ -14,14 +33,26 @@ namespace
 {
 //  static std::atomic<int> sNextFunctionId;
 
-  std::string getId(rtFunctionRef const& /*ref*/)
+  std::string getId(rtFunctionRef const& ref)
   {
-    rtGuid id = rtGuid::newRandom();
+    rtFunctionCallback * obj = dynamic_cast<rtFunctionCallback *>(ref.ptr());
+    if(obj && !obj->getId().empty())
+    {
+      return obj->getId();
+    }
+    else
+    {
+      rtGuid id = rtGuid::newRandom();
 
-    std::stringstream ss;
-    ss << "func://";
-    ss << id.toString();
-    return ss.str();
+      std::stringstream ss;
+      ss << "func://";
+      ss << id.toString();
+
+      if(obj)
+        obj->setId(ss.str());
+
+      return ss.str();
+    }
   }
  
   std::string getId(rtObjectRef const& ref)
@@ -108,7 +139,7 @@ rtRemoteValueWriter::write(rtRemoteEnvironment* env, rtValue const& from,
     case RT_stringType:   to.AddMember("value", std::string(from.toString().cString()), doc.GetAllocator()); break;
     case RT_voidPtrType:
 #if __x86_64
-      to.AddMember("Value", (uint64_t)(from.toVoidPtr()), doc.GetAllocator());
+      to.AddMember("value", (uint64_t)(from.toVoidPtr()), doc.GetAllocator());
 #else
       to.AddMember("value", (uint32_t)(from.toVoidPtr()), doc.GetAllocator());
 #endif

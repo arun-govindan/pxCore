@@ -1,6 +1,6 @@
  /*
 
- rtCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 
 #include <string.h>
 #include <vector>
+#include <string>
 
 // rtIObject and rtIFunction are designed to be an
 // Abstract Binary Interface(ABI)
@@ -44,6 +45,9 @@ class rtIObject
 
     virtual unsigned long AddRef() = 0;
     virtual unsigned long Release() = 0;
+
+    virtual rtMethodMap* getMap() const = 0;
+    
     virtual rtError Get(const char* name, rtValue* value) const = 0;
     virtual rtError Get(uint32_t i, rtValue* value) const = 0;
     virtual rtError Set(const char* name, const rtValue* value) = 0;
@@ -57,6 +61,8 @@ class rtIFunction
     virtual unsigned long AddRef()=0;
     virtual unsigned long Release()=0;
     virtual rtError Send(int numArgs, const rtValue* args, rtValue* result) = 0;
+    virtual size_t hash() = 0;
+    virtual void setHash(size_t) = 0;
 };
 
 class rtObjectRef;
@@ -185,6 +191,8 @@ public:
 	       const rtValue& arg5, const rtValue& arg6,
 	       const rtValue& arg7);
   
+  rtError sendAsync(const rtValue& arg1, const rtValue& arg2);
+
   template <typename T> 
     rtError sendReturns(T& result);
   template <typename T> 
@@ -222,6 +230,7 @@ public:
 
  private:
   virtual rtError Send(int numArgs, const rtValue* args, rtValue* result) = 0;
+  virtual rtError SendAsync(int numArgs, const rtValue* args); 
 };
 
 class rtObjectRef: public rtRef<rtIObject>, public rtObjectBase
@@ -272,6 +281,16 @@ public:
     return l;
   }
 
+  virtual size_t hash()
+  {
+    return -1;
+  }
+
+  virtual void setHash(size_t hash)
+  {
+    UNUSED_PARAM(hash);
+  }
+
  private:
   virtual rtError Send(int numArgs, const rtValue* args, rtValue* result);
 
@@ -309,7 +328,7 @@ public:
 
   virtual rtError Get(uint32_t /*i*/, rtValue* /*value*/) const;
   virtual rtError Get(const char* name, rtValue* value) const;
-  virtual rtError Set(uint32_t /*i*/, const rtValue* /*value*/);
+  virtual rtError Set(uint32_t i, const rtValue* value);
   virtual rtError Set(const char* name, const rtValue* value);
 
 protected:
@@ -602,16 +621,36 @@ public:
     return mCB(numArgs, args, result, mContext);
   }
   
+  virtual size_t hash()
+  {
+    return -1;
+  }
+
+  virtual void setHash(size_t hash)
+  {
+    UNUSED_PARAM(hash);
+  }
+
   void clearContext()
   {
     mContext = NULL;
   }
   
+  void setId(std::string id)
+  {
+    mId = id;
+  }
+
+  std::string getId()
+  {
+    return mId;
+  }
 
 private:  
   rtFunctionCB mCB;
   void* mContext;
   rtAtomic mRefCount;
+  std::string mId;
 };
 
 
@@ -620,7 +659,7 @@ class rtEmit: public rtIFunction
 {
 
 public:
-  rtEmit(): mRefCount(0) {}
+  rtEmit(): mRefCount(0), mProcessingEvents(false), mPendingEntriesToAdd() {}
   virtual ~rtEmit() {}
 
   virtual unsigned long AddRef();
@@ -633,6 +672,21 @@ public:
   rtError clearListeners() {mEntries.clear(); return RT_OK;}
 
   virtual rtError Send(int numArgs,const rtValue* args,rtValue* result);
+  virtual rtError SendAsync(int numArgs, const rtValue* args);
+
+  virtual size_t hash()
+  {
+    return -1;
+  }
+
+  virtual void setHash(size_t hash)
+  {
+    UNUSED_PARAM(hash);
+  }
+
+
+private:
+  void processPendingEvents();
 
 protected:
   struct _rtEmitEntry 
@@ -640,10 +694,14 @@ protected:
     rtString n;
     rtFunctionRef f;
     bool isProp;
+    bool markForDelete;
+    size_t fnHash;
   };
   
   std::vector<_rtEmitEntry> mEntries;
   rtAtomic mRefCount;
+  bool mProcessingEvents;
+  std::vector<_rtEmitEntry> mPendingEntriesToAdd;
 };
 
 class rtEmitRef: public rtRef<rtEmit>, public rtFunctionBase
@@ -657,6 +715,7 @@ public:
 
 private:
   virtual rtError Send(int numArgs,const rtValue* args,rtValue* result);
+  virtual rtError SendAsync(int numArgs,const rtValue* args);
 };
 
 class rtArrayObject: public rtObject 
@@ -697,15 +756,15 @@ struct rtNamedValue
 class rtMapObject: public rtObject 
 {
 public:
-
-  std::vector<rtNamedValue>::iterator find(const char* name);
-
+  rtDeclareObject(rtMapObject, rtObject);
+  
   virtual rtError Get(const char* name, rtValue* value) const;
   virtual rtError Get(uint32_t /*i*/, rtValue* /*value*/) const;
   virtual rtError Set(const char* name, const rtValue* value);
   virtual rtError Set(uint32_t /*i*/, const rtValue* /*value*/);
 
 private:
+  std::vector<rtNamedValue>::iterator find(const char* name);
   std::vector<rtNamedValue> mProps;
 };
 

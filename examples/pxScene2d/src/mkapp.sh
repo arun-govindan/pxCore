@@ -1,7 +1,16 @@
 #!/bin/bash
 
+#minJS=cp        #don't minify
+minJS=./jsMin.sh  #minify
+
 externalDir=../external
-bundle=pxscene.app
+APPNAME=Spark
+if [ "$TRAVIS_EVENT_TYPE" == "cron" ]
+then
+APPNAME=SparkEdge
+fi
+
+bundle=${APPNAME}.app
 bundleBin=$bundle/Contents/MacOS
 
 #bundleRes=$bundle/Contents/Resources
@@ -26,7 +35,10 @@ cp $externalDir/curl/lib/.libs/libcurl.4.dylib $bundleLib
 cp $externalDir/libnode-v6.9.0/out/Release/libnode*.dylib $bundleLib
 cp $externalDir/ft/objs/.libs/libfreetype.6.dylib $bundleLib
 cp $externalDir/jpg/.libs/libjpeg.9.dylib $bundleLib
-cp $externalDir/zlib/libz.a $bundleLib
+#Avoid copying v8 artifacts if not generated
+if [ -e $externalDir/v8/out.gn ]; then
+ cp $externalDir/v8/out.gn/x64.release/*.bin $bundleBin
+fi
 
 # Copy OTHER to Bundle...
 #
@@ -41,29 +53,60 @@ cp macstuff/Info.plist $bundle/Contents
 
 # Copy RESOURCES to Bundle...
 #
+
+rm -f browser/images/status_bg_edge.svg
+
 cp -a browser $bundleRes
 cp FreeSans.ttf $bundleRes
+cp sparkpermissions.conf $bundleRes
 
 cp package.json $bundleRes
-cp pxscene $bundleBin
+if [ "$TRAVIS_EVENT_TYPE" == "cron" ]  
+then
+echo "************ building edge"
+cp Spark $bundleBin/SparkEdge
+else
+cp ${APPNAME} $bundleBin
+fi
 
-cp macstuff/pxscene.sh $bundleBin
+if [ "$TRAVIS_EVENT_TYPE" == "cron" ]  
+then
+  sed -i -e 's/\.\/Spark/\.\/SparkEdge/g' macstuff/spark.sh
+  sed -i -e 's/Spark.log /SparkEdge.log /g' macstuff/spark.sh
+  sed -i -e 's/Spark.app /SparkEdge.app /g' macstuff/dmgresources/engine_install
+  sed -i -e 's/Spark_update.log /SparkEdge_update.log /g' macstuff/dmgresources/engine_install
+fi
+
+cp macstuff/spark.sh $bundleBin
 cp macstuff/EngineRunner $bundleBin
 
 # Minify JS into Bundle...
 #
-./jsMinFolder.sh rcvrcore $bundleRes/rcvrcore
+# For Node
+#./jsMinFolder.sh rcvrcore $bundleRes/rcvrcore
+cp -a rcvrcore/* $bundleRes/rcvrcore
+
 
 # NOTE" jsMin.sh will default to a 'min' name with 1 arg.  E.g.  "jsMin.sh INPUT.js"  >> INPUT.min.js
 #
-./jsMin.sh init.js $bundleRes/init.js
-./jsMin.sh shell.js $bundleRes/shell.js
-./jsMin.sh browser.js $bundleRes/browser.js
-./jsMin.sh about.js $bundleRes/about.js
-./jsMin.sh browser/editbox.js $bundleRes/browser/editbox.js
+${minJS} init.js $bundleRes/init.js
+${minJS} shell.js $bundleRes/shell.js
+${minJS} browser.js $bundleRes/browser.js
+${minJS} about.js $bundleRes/about.js
+${minJS} mime.js $bundleRes/mime.js
+${minJS} browser/editbox.js $bundleRes/browser/editbox.js
 #./jsMinFolder.sh browser $bundleRes/browser
 
+# Copy MIME files...
+${minJS} mime.js $bundleRes/mime.js
+
+# Copy duktape modules
+cp -a duk_modules $bundleRes/duk_modules
+# Copy node modules
 cp -a node_modules $bundleRes/node_modules
+# Copy v8 modules
+cp -a v8_modules $bundleRes/v8_modules
+
 
 # Copy OTHER to Resources...
 #

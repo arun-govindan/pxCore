@@ -1,3 +1,21 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #include "rtRemote.h"
 #include "rtRemoteCallback.h"
 #include "rtRemoteClient.h"
@@ -6,7 +24,6 @@
 #include "rtRemoteObjectCache.h"
 #include "rtRemoteServer.h"
 #include "rtRemoteStream.h"
-#include "rtRemoteNameService.h"
 #include "rtRemoteEnvironment.h"
 #include "rtRemoteConfigBuilder.h"
 
@@ -18,7 +35,6 @@
 #include <rtLog.h>
 #include <unistd.h>
 
-static rtRemoteNameService* gNs = nullptr;
 static std::mutex gMutex;
 static rtRemoteEnvironment* gEnv = nullptr;
 
@@ -35,8 +51,8 @@ rtRemoteInit(rtRemoteEnvironment* env)
     e = env->Server->open();
     if (e != RT_OK)
       rtLogError("failed to open rtRemoteServer. %s", rtStrError(e));
-
-    env->start();
+    else
+      env->start();
   }
   else
   {
@@ -53,32 +69,20 @@ rtRemoteInit(rtRemoteEnvironment* env)
   return e;
 }
 
-rtError
-rtRemoteInitNs(rtRemoteEnvironment* env)
-{
-  rtError e = RT_OK;
-  //rtRemoteConfig::getInstance();
-  if (gNs == nullptr)
-  {
-    gNs = new rtRemoteNameService(env);
-    e = gNs->init();
-  }
-
-  return e;
-}
-
 extern rtError rtRemoteShutdownStreamSelector();
 
 rtError
-rtRemoteShutdown(rtRemoteEnvironment* env)
+rtRemoteShutdown(rtRemoteEnvironment* env, bool immediate)
 {
   rtError e = RT_FAIL;
   std::lock_guard<std::mutex> lock(gMutex);
 
-  env->RefCount--;
-  if (env->RefCount == 0)
+  if (!--env->RefCount || immediate)
   {
-    rtLogInfo("environment reference count is zero, deleting");
+    if (env->RefCount)
+      rtLogWarn("immediate shutdown (reference count: %u), deleting", env->RefCount);
+    else
+      rtLogInfo("environment reference count is zero, deleting");
     env->shutdown();
     if (env == gEnv)
       gEnv = nullptr;
@@ -92,17 +96,6 @@ rtRemoteShutdown(rtRemoteEnvironment* env)
   }
 
   return e;
-}
-
-rtError
-rtRemoteShutdownNs()
-{
-  if (gNs)
-  {
-    delete gNs;
-    gNs = nullptr;
-  }
-  return RT_OK;
 }
 
 rtError
@@ -168,7 +161,7 @@ rtRemoteProcessSingleItem(rtRemoteEnvironment* env)
 };
 
 rtError
-rtRemoteRun(rtRemoteEnvironment* env, uint32_t timeout)
+rtRemoteRun(rtRemoteEnvironment* env, uint32_t timeout, bool wait)
 {
 
   if (env->Config->server_use_dispatch_thread())
@@ -181,7 +174,7 @@ rtRemoteRun(rtRemoteEnvironment* env, uint32_t timeout)
   do
   {
     auto start = std::chrono::steady_clock::now();
-    e = env->processSingleWorkItem(time_remaining, false, nullptr);
+    e = env->processSingleWorkItem(time_remaining, wait, nullptr);
     if (e != RT_OK)
       return e;
     auto end = std::chrono::steady_clock::now();
@@ -264,7 +257,7 @@ rtRemoteProcessSingleItem()
 }
 
 rtError
-rtRemoteRunUntil(rtRemoteEnvironment* env, uint32_t millisecondsFromNow)
+rtRemoteRunUntil(rtRemoteEnvironment* env, uint32_t millisecondsFromNow, bool wait)
 {
   rtError e = RT_OK;
 
@@ -279,7 +272,7 @@ rtRemoteRunUntil(rtRemoteEnvironment* env, uint32_t millisecondsFromNow)
     auto endTime = std::chrono::milliseconds(millisecondsFromNow) + std::chrono::system_clock::now();
     while (endTime > std::chrono::system_clock::now())
     {
-      e = rtRemoteRun(env, 16);
+      e = rtRemoteRun(env, wait ? millisecondsFromNow : 16, wait);
       if (e != RT_OK && e != RT_ERROR_QUEUE_EMPTY)
         return e;
     }

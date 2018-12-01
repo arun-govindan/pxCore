@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@
 #include "rtThreadPool.h"
 #include "rtThreadQueue.h"
 #include "rtMutex.h"
-#include "rtNode.h"
+#include "rtScript.h"
+#include "rtSettings.h"
 
 #include "pxContext.h"
 #include "pxUtil.h"
@@ -78,7 +79,7 @@
   #define TRACK_FBO_CALLS()
 #endif
 
-rtThreadQueue gUIThreadQueue;
+rtThreadQueue* gUIThreadQueue = new rtThreadQueue();
 
 ////////////////////////////////////////////////////////////////
 
@@ -111,7 +112,7 @@ extern bool needsFlip;
 #endif //ENABLE_DFB_GENERIC
 
 #ifdef RUNINMAIN
-extern rtNode                   script;
+extern rtScript                   script;
 #else
 extern uv_async_t 				gcTrigger;
 #endif
@@ -162,6 +163,25 @@ static pxMatrix4f gMatrix;
 static float gAlpha = 1.0;
 uint32_t gRenderTick = 0;
 std::vector<pxTexture*> textureList;
+#ifdef ENABLE_BACKGROUND_TEXTURE_CREATION
+rtMutex contextLock;
+#endif //ENABLE_BACKGROUND_TEXTURE_CREATION
+
+pxError lockContext()
+{
+#ifdef ENABLE_BACKGROUND_TEXTURE_CREATION
+  contextLock.lock();
+#endif //ENABLE_BACKGROUND_TEXTURE_CREATION
+  return PX_OK;
+}
+
+pxError unlockContext()
+{
+#ifdef ENABLE_BACKGROUND_TEXTURE_CREATION
+  contextLock.unlock();
+#endif //ENABLE_BACKGROUND_TEXTURE_CREATION
+  return PX_OK;
+}
 
 pxError addToTextureList(pxTexture* texture)
 {
@@ -191,7 +211,7 @@ pxError removeFromTextureList(pxTexture* texture)
 pxError ejectNotRecentlyUsedTextureMemory(int64_t bytesNeeded, uint32_t maxAge=5)
 {
   rtLogDebug("attempting to eject %d bytes of texture memory with max age %u", bytesNeeded, maxAge);
-#if defined(ENABLE_PX_SCENE_TEXTURE_USAGE_MONITORING) && !defined(DISABLE_TEXTURE_EJECTION)
+#if !defined(DISABLE_TEXTURE_EJECTION)
   int numberEjected = 0;
   int64_t beforeTextureMemoryUsage = context.currentTextureMemoryUsageInBytes();
 
@@ -218,7 +238,7 @@ pxError ejectNotRecentlyUsedTextureMemory(int64_t bytesNeeded, uint32_t maxAge=5
     rtLogWarn("%d textures have been ejected and %d bytes of texture memory has been freed",
         numberEjected, (beforeTextureMemoryUsage - afterTextureMemoryUsage));
   }
-#endif //ENABLE_PX_SCENE_TEXTURE_USAGE_MONITORING && !DISABLE_TEXTURE_EJECTION
+#endif //!DISABLE_TEXTURE_EJECTION
   return PX_OK;
 }
 
@@ -956,7 +976,7 @@ public:
       mInitialized = true;
     }
   }
-  
+
   void clear(const pxRect& r)
   {
     mOffscreen.fill(r, pxClear);
@@ -1104,6 +1124,8 @@ private:
   bool mInitialized;
 }; // CLASS - pxSwTexture
 
+typedef rtRef<pxSwTexture> pxSwTextureRef;
+static pxSwTextureRef  swRasterTexture; // aka "fullScreenTextureSoftware"
 void onDecodeComplete(void* context, void* data)
 {
   DecodeImageData* imageData = (DecodeImageData*)context;
@@ -1156,11 +1178,17 @@ void decodeTextureData(void* data)
       pxOffscreen *decodedOffscreen = new pxOffscreen();
 
       pxLoadImage(compressedImageData, compressedImageDataSize, *decodedOffscreen); // background image decode
-      gUIThreadQueue.addTask(onDecodeComplete, data, decodedOffscreen);             // queue image onto UI thread. Task will 'delete' data.
+      if (gUIThreadQueue)
+      {
+        gUIThreadQueue->addTask(onDecodeComplete, data, decodedOffscreen);
+      }             // queue image onto UI thread. Task will 'delete' data.
     }
     else
     {
-      gUIThreadQueue.addTask(onDecodeComplete, data, NULL); // Just clean up !
+      if (gUIThreadQueue)
+      {
+        gUIThreadQueue->addTask(onDecodeComplete, data, NULL); // Just clean up !
+      }
     }
   }
 }
@@ -1186,7 +1214,10 @@ void cleanupOffscreen(void* data)
       imageData->textureOffscreen->freeOffscreenData();
     }
 
-    gUIThreadQueue.addTask(onOffscreenCleanupComplete, data, NULL);
+    if (gUIThreadQueue)
+    {
+      gUIThreadQueue->addTask(onOffscreenCleanupComplete, data, NULL);
+    }
   }
 }
 
@@ -1439,9 +1470,11 @@ inline pxError draw_TEXTURE(int resW, int resH, float* matrix, float alpha,
 // MASK
 inline pxError draw_MASK(int resW, int resH, float* matrix, float alpha,
                       DFBRectangle /*&src*/, DFBRectangle /*&dst*/,
-                      pxTextureRef texture, pxTextureRef mask)
+                      pxTextureRef texture, pxTextureRef mask,
+                      pxConstantsMaskOperation::constants maskOp /*= pxConstantsMaskOperation::NORMAL*/)
 {
   (void) resW; (void) resH; (void) matrix; (void) alpha; (void) texture;
+  (void) maskOp; // prevent warning
 
   if (mask->bindGLTextureAsMask(0) != PX_OK)  // SETS >> 'boundTextureMask'
   {
@@ -1505,6 +1538,9 @@ inline pxError draw_MASK(int resW, int resH, float* matrix, float alpha,
 
       // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       // Output....
+
+     // TODO:  maskOp will affect the blending functions here.
+
       DFB_CHECK(boundFramebuffer->SetBlittingFlags(boundFramebuffer,
             DFBSurfaceBlittingFlags( DSBLIT_BLEND_ALPHACHANNEL) ));
 
@@ -1669,9 +1705,11 @@ static void drawRectOutline(float x, float y, float w, float h, float lw, const 
 static void drawImageTexture(float x, float y, float w, float h, pxTextureRef texture,
                              pxTextureRef mask, bool useTextureDimsAlways, float* color, // default: "color = BLACK"
                              pxConstantsStretch::constants xStretch,
-                             pxConstantsStretch::constants yStretch)
+                             pxConstantsStretch::constants yStretch,
+                             pxConstantsMaskOperation::constants maskOp /*= pxConstantsMaskOperation::constants::NORMAL*/)
 {
   // args are tested at call site...
+  (void) maskOp; // prevent warning
 
   if (boundFramebuffer == NULL)
   {
@@ -1812,7 +1850,7 @@ static void drawImageTexture(float x, float y, float w, float h, pxTextureRef te
 
   if (mask.getPtr() != NULL)
   {
-      if (textureBindFailure || draw_MASK(gResW, gResH, gMatrix.data(), gAlpha, src, dst, texture, mask) != PX_OK)
+      if (textureBindFailure || draw_MASK(gResW, gResH, gMatrix.data(), gAlpha, src, dst, texture, mask, maskOp) != PX_OK)
       {
         drawRect2(0, 0, iw, ih, blackColor);
       }
@@ -2058,11 +2096,25 @@ void pxContext::init()
   DFB_CHECK(boundFramebuffer->SetRenderOptions(boundFramebuffer,
           DFBSurfaceRenderOptions(DSRO_MATRIX /*| DSRO_ANTIALIAS*/) ));
 
-  setTextureMemoryLimit(PXSCENE_DEFAULT_TEXTURE_MEMORY_LIMIT_IN_BYTES );
+  rtValue val;
+  if (RT_OK == rtSettings::instance()->value("enableTextureMemoryMonitoring", val))
+  {
+    mEnableTextureMemoryMonitoring = val.toString().compare("true") == 0;
+  }
+  if (RT_OK == rtSettings::instance()->value("textureMemoryLimitInMb", val))
+  {
+    setTextureMemoryLimit((int64_t)val.toInt32() * (int64_t)1024 * (int64_t)1024);
+  }
 
   rtLogSetLevel(RT_LOG_INFO); // LOG LEVEL
 
   std::srand(unsigned (std::time(0)));
+}
+
+
+void pxContext::term()  // clean up statics 
+{
+  swRasterTexture = NULL;
 }
 
 void pxContext::setSize(int w, int h)
@@ -2460,6 +2512,7 @@ void pxContext::drawImage9(float w, float h, float x1, float y1,
 void pxContext::drawImage9Border(float w, float h, 
                   float /*bx1*/, float /*by1*/, float /*bx2*/, float /*by2*/,
                   float ix1, float iy1, float ix2, float iy2,
+                  bool drawCenter, float* color,
                   pxTextureRef texture)
 {
   // TRANSPARENT / DIMENSIONLESS
@@ -2480,12 +2533,27 @@ void pxContext::drawImage9Border(float w, float h,
   drawImage92(0, 0, w, h, ix1, iy1, ix2, iy2, texture);
 }
 
+// convenience method
+void pxContext::drawImageMasked(float x, float y, float w, float h,
+                                pxConstantsMaskOperation::constants maskOp,
+                                pxTextureRef t, pxTextureRef mask)
+{
+  this->drawImage(x, y, w, h, t , mask,
+                    /* useTextureDimsAlways = */ true, /*color = */ NULL,      // DEFAULT
+                    /*             stretchX = */ pxConstantsStretch::STRETCH,  // DEFAULT
+                    /*             stretchY = */ pxConstantsStretch::STRETCH,  // DEFAULT
+                    /*      downscaleSmooth = */ false,                        // DEFAULT
+                                                 maskOp                        // PARAMETER
+                    );
+};
+
 void pxContext::drawImage(float x, float y, float w, float h,
                         pxTextureRef t, pxTextureRef mask,
                         bool useTextureDimsAlways, float* color,
                         pxConstantsStretch::constants stretchX,
                         pxConstantsStretch::constants stretchY,
-                        bool downscaleSmooth)
+                        bool downscaleSmooth,
+                        pxConstantsMaskOperation::constants maskOp     /* = pxConstantsMaskOperation::NORMAL */ )
 {
 #ifdef DEBUG_SKIP_IMAGE
 #warning "DEBUG_SKIP_IMAGE enabled ... Skipping "
@@ -2523,7 +2591,7 @@ void pxContext::drawImage(float x, float y, float w, float h,
 
   float black[4] = {0,0,0,1};
   drawImageTexture(x, y, w, h, t, mask, useTextureDimsAlways,
-                  color? color : black, stretchX, stretchY);
+                  color? color : black, stretchX, stretchY, maskOp);
 }
 
 void pxContext::drawDiagRect(float x, float y, float w, float h, float* color)
@@ -2580,9 +2648,6 @@ void pxContext::drawDiagRect(float x, float y, float w, float h, float* color)
 
   DFB_CHECK (boundFramebuffer->DrawRectangle(boundFramebuffer, x, y, w, h));
 }
-
-typedef rtRef<pxSwTexture> pxSwTextureRef;
-static pxSwTextureRef  swRasterTexture; // aka "fullScreenTextureSoftware"
 
 void pxContext::drawOffscreen(float src_x, float src_y,
                               float dst_x, float dst_y,
@@ -2803,7 +2868,7 @@ bool pxContext::isObjectOnScreen(float /*x*/, float /*y*/, float /*width*/, floa
 #endif
 }
 
-void pxContext::adjustCurrentTextureMemorySize(int64_t changeInBytes)
+void pxContext::adjustCurrentTextureMemorySize(int64_t changeInBytes, bool allowGarbageCollect)
 {
   if (changeInBytes == 0)
   {
@@ -2827,12 +2892,11 @@ void pxContext::adjustCurrentTextureMemorySize(int64_t changeInBytes)
     //    pc, mCurrentTextureMemorySizeInBytes, changeInBytes);
   }
   //rtLogDebug("the current texture size: %" PRId64 ".", mCurrentTextureMemorySizeInBytes);
-#ifdef ENABLE_PX_SCENE_TEXTURE_USAGE_MONITORING
-  if (pc >= 100.0f)
+  if (mEnableTextureMemoryMonitoring && allowGarbageCollect && pc >= 100.0f)
   {
     rtLogDebug("\n ###  Texture Memory: %3.1f %%  <<<   GARBAGE COLLECT", pc);
 #ifdef RUNINMAIN
-    script.garbageCollect();
+    script.collectGarbage();
 #else
     uv_async_send(&gcTrigger);
 #endif
@@ -2841,7 +2905,6 @@ void pxContext::adjustCurrentTextureMemorySize(int64_t changeInBytes)
   // {
   //     rtLogDebug("\n ###  Texture Memory: %3.2f %% ", pc);
   // }
-#endif // ENABLE_PX_SCENE_TEXTURE_USAGE_MONITORING
 }
 
 void pxContext::setTextureMemoryLimit(int64_t textureMemoryLimitInBytes)
@@ -2849,20 +2912,25 @@ void pxContext::setTextureMemoryLimit(int64_t textureMemoryLimitInBytes)
   mTextureMemoryLimitInBytes = textureMemoryLimitInBytes;
 }
 
-bool pxContext::isTextureSpaceAvailable(pxTextureRef texture)
+bool pxContext::isTextureSpaceAvailable(pxTextureRef texture, bool allowGarbageCollect)
 {
-#ifdef ENABLE_PX_SCENE_TEXTURE_USAGE_MONITORING
+  if (!mEnableTextureMemoryMonitoring)
+    return true;
+
   int textureSize = (texture->width()*texture->height()*4);
   if ((textureSize + mCurrentTextureMemorySizeInBytes) >
-             (mTextureMemoryLimitInBytes + PXSCENE_DEFAULT_TEXTURE_MEMORY_LIMIT_THRESHOLD_PADDING_IN_BYTES))
+             (mTextureMemoryLimitInBytes + mTextureMemoryLimitThresholdPaddingInBytes))
   {
+    if (allowGarbageCollect)
+    {
+      #ifdef RUNINMAIN
+          script.collectGarbage();
+      #else
+          uv_async_send(&gcTrigger);
+      #endif
+    }
     return false;
   }
-  else
-  {
-    return true;
-  }
-#endif //ENABLE_PX_SCENE_TEXTURE_USAGE_MONITORING
   return true;
 }
 
@@ -2884,6 +2952,9 @@ int64_t pxContext::textureMemoryOverflow(pxTextureRef texture)
 
 int64_t pxContext::ejectTextureMemory(int64_t bytesRequested, bool forceEject)
 {
+  if (!mEnableTextureMemoryMonitoring)
+    return 0;
+
   int64_t beforeTextureMemoryUsage = context.currentTextureMemoryUsageInBytes();
   if (!forceEject)
   {

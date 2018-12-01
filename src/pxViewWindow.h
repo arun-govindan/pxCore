@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -52,6 +52,8 @@ protected:
   virtual void onMouseUp(int32_t x, int32_t y, uint32_t flags);
   virtual void onMouseLeave();
   virtual void onMouseMove(int32_t x, int32_t y);
+
+  virtual void onScrollWheel(float dx, float dy);
 
   virtual void onFocus();
   virtual void onBlur();

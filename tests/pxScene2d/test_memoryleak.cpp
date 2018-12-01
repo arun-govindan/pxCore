@@ -1,3 +1,21 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #ifndef ENABLE_RT_NODE
 #define ENABLE_RT_NODE
 #endif
@@ -18,7 +36,7 @@
 
 using namespace std;
 
-extern rtNode script;
+extern rtScript script;
 
 class pxSceneContainerLeakTest : public testing::Test
 {
@@ -41,7 +59,7 @@ class pxSceneContainerLeakTest : public testing::Test
       sceneContainer->remove();
       EXPECT_TRUE (sceneContainer->mRefCount > 1);
       EXPECT_TRUE (sceneContainer->parent() == NULL);
-      script.garbageCollect();
+      script.collectGarbage();
     }
 
     void withParentRemovedGCHappenedTest()
@@ -53,10 +71,10 @@ class pxSceneContainerLeakTest : public testing::Test
       pxObject* sceneContainer = mSceneContainer[0];
       sceneContainer->AddRef();
       sceneContainer->remove();
-      script.garbageCollect();
+      script.collectGarbage();
       pxSleepMS(3000);
       EXPECT_TRUE (sceneContainer->mRefCount == 1);
-      script.garbageCollect();
+      script.collectGarbage();
     }
 
     void withoutParentRemovedGCNotHappenedTest()
@@ -68,7 +86,7 @@ class pxSceneContainerLeakTest : public testing::Test
       pxObject* sceneContainer = mSceneContainer[0];
       EXPECT_TRUE (sceneContainer->mRefCount > 1);
       EXPECT_TRUE (sceneContainer->parent() != NULL);
-      script.garbageCollect();
+      script.collectGarbage();
     }
 
     void withoutParentRemovedGCHappenedTest()
@@ -78,14 +96,14 @@ class pxSceneContainerLeakTest : public testing::Test
       populateObjects();
 
       pxObject* sceneContainer = mSceneContainer[0];
-      script.garbageCollect();
+      script.collectGarbage();
       EXPECT_TRUE (sceneContainer->mRefCount > 1);
       EXPECT_TRUE (sceneContainer->parent() != NULL);
     }
 
 private:
 
-    void startJsFile(char *jsfile)
+    void startJsFile(const char *jsfile)
     {
       mUrl = jsfile;
       mView = new pxScriptView(mUrl,"");

@@ -1,6 +1,6 @@
 /*
 
- rtCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -136,7 +136,6 @@ void rtLogPrintf(rtLogLevel level, const char* file, int line, const char* forma
   if (sLogHandler == NULL)
   {
     printf(RT_LOGPREFIX "%5s %s:%d -- Thread-%" RT_THREADID_FMT ": ", logLevel, path, line, threadId);
-
     va_list ptr;
     va_start(ptr, format);
     vprintf(format, ptr);
@@ -157,7 +156,7 @@ void rtLogPrintf(rtLogLevel level, const char* file, int line, const char* forma
     if (n >= sizeof(buff))
       buff[sizeof(buff) - 1] = '\0';
 
-    sLogHandler(level, path, line, threadId, buff);
+    sLogHandler(level, path, line, (int) threadId, buff);
   }
   
   if (level == RT_LOG_FATAL)

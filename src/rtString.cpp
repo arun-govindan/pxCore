@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -29,25 +29,37 @@ extern "C"
 #include "utf8.h"
 }
 
-rtString::rtString(): mData(0) {}
+rtString::rtString(): mData(NULL) {}
 
-rtString::rtString(const char* s): mData(0) 
+rtString::rtString(const char* s): mData(NULL)
 {
   if (s)
     mData = strdup(s);
 }
 
-rtString::rtString(const char* s, uint32_t byteLen): mData(0)
+rtString::rtString(const char* s, uint32_t byteLen): mData(NULL)
 {
+  if (s)
+  {
+    init(s, byteLen);
+  }
+}
+
+rtString& rtString::init(const char* s, size_t byteLen)
+{
+  mData = NULL;
+  
   if (s)
   {
     mData = (char*)malloc(byteLen+1);
     memcpy(mData, s, byteLen);
     mData[byteLen] = 0; // null terminate
   }
+
+  return *this;
 }
 
-rtString::rtString(const rtString& s): mData(0) 
+rtString::rtString(const rtString& s): mData(NULL)
 {
   if (s.mData)
     mData = strdup(s.mData);
@@ -89,12 +101,14 @@ void rtString::term()
   mData = 0;
 }
 
-void rtString::append(const char* s) 
+rtString& rtString::append(const char* s)
 {
-  size_t sl = strlen(s);
-  size_t dl = strlen(mData);
+  size_t sl = s?strlen(s):0;
+  size_t dl = mData?strlen(mData):0;
   mData = (char*)realloc((void*)mData, dl+sl+1);
-  strcpy(mData+dl, s);
+  strcpy(mData+dl, s?s:"");
+  
+  return *this;
 }
 
 int rtString::compare(const char* s) const 
@@ -134,6 +148,22 @@ bool rtString::beginsWith(const char* s) const
 {
   s = s?s:"";
   return (strncmp(cString(),s,strlen(s))==0);
+}
+
+bool rtString::endsWith(const char* s) const
+{
+  s = s?s:"";
+  const char* t = mData?mData:"";
+  int sl = u8_strlen((char*)s);
+  int tl = u8_strlen((char*)t);
+
+  bool result = false;
+  if (tl-sl > 0)
+  {
+    t = t + u8_charnum((char*)t,tl-sl);
+    result = (strncmp(t,s,sl) == 0);
+  }
+  return result;
 }
 
 int32_t rtString::find(size_t pos, const char* str) const

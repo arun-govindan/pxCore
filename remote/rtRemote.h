@@ -1,3 +1,21 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #ifndef __RT_RPC_H__
 #define __RT_RPC_H__
 
@@ -78,10 +96,11 @@ rtRemoteUnregisterDisconnectedCallback( rtRemoteEnvironment* env, remoteDisconne
 
 /**
  * Shutdown rtRemote sub-system
+ * @param immediate ignore RefCount
  * @returns RT_OK for success
  */
 rtError
-rtRemoteShutdown(rtRemoteEnvironment* env);
+rtRemoteShutdown(rtRemoteEnvironment* env, bool immediate = false);
 
 /**
  * Processes a single queue item. This is an API to be called from main loop from queue callback.
@@ -95,9 +114,10 @@ rtRemoteProcessSingleItem(rtRemoteEnvironment* env);
  * is expired. Timeout duration is in milliseconds.
  * @param timeout The amount of time to run this function. Use RT_REMOTE_TIMEOUT_INIFINITE
  * to run forever, or until another thread calls rtRemoteShutdown();
+ * @param wait If true will block the thread until an event comes or timeout reached
  */
 rtError
-rtRemoteRun(rtRemoteEnvironment* env, uint32_t timeout);
+rtRemoteRun(rtRemoteEnvironment* env, uint32_t timeout, bool wait);
 
 rtError rtRemoteInitNs(rtRemoteEnvironment* env);
 rtError rtRemoteShutdownNs(rtRemoteEnvironment* env);
@@ -126,7 +146,7 @@ rtError
 rtRemoteProcessSingleItem();
 
 rtError
-rtRemoteRunUntil(rtRemoteEnvironment* env, uint32_t millisecondsFromNow);
+rtRemoteRunUntil(rtRemoteEnvironment* env, uint32_t millisecondsFromNow, bool wait);
 
 #endif
 

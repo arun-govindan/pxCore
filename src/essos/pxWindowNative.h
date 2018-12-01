@@ -1,5 +1,21 @@
-// pxCore CopyRight 2005-2006 John Robinson
-// Portable Framebuffer and Windowing Library
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 // pxWindowNative.h
 
 #ifndef PX_WINDOW_NATIVE_H
@@ -77,6 +93,13 @@ public:
     virtual void onKeyDown(uint32_t keycode, uint32_t flags) =0;
     virtual void onKeyUp(uint32_t keycode, uint32_t flags) =0;
     virtual void onChar(uint32_t c) =0;
+
+    void onSizeUpdated(int width, int height);
+
+    void onTouchDown(int id, int x, int y);
+    void onTouchUp(int id);
+    void onTouchMotion(int id, int x, int y);
+    void onTouchFrame();
     
     //timer methods
     static int createAndStartEventLoopTimer(int timeoutInMilliseconds);
@@ -89,7 +112,6 @@ protected:
 
     virtual void onCloseRequest() = 0;
     virtual void onClose() = 0;
-
     virtual void onSize(int32_t w, int32_t h) = 0;
 
     virtual void onDraw(pxSurfaceNative surface) = 0;

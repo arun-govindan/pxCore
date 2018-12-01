@@ -1,3 +1,21 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #include "pxArchive.h"
 
 #include "test_includes.h" // Needs to be included last
@@ -68,6 +86,20 @@ class pxArchiveTest : public testing::Test
 			EXPECT_TRUE(0 == sCode);
 
 		}
+
+                void pxArchiveinitFromUrlFromZipTest()
+                {
+	  	        rtObjectRef pxArchiveParent;
+                        pxArchiveParent = new pxArchive();
+                        urlStr = "supportfiles/sample.zip";
+	                EXPECT_EQ(RT_OK, ((pxArchive*)pxArchiveParent.getPtr())->initFromUrl(urlStr));
+	                pxArchive pxArchiveChild;
+                        EXPECT_EQ(RT_OK, pxArchiveChild.initFromUrl("test.html", NULL, pxArchiveParent));
+                        rtData d;
+                        EXPECT_EQ(RT_OK, pxArchiveChild.getFileData("", d));
+                        EXPECT_TRUE(d.length() > 0);
+                }
+
 		void pxArchiveready()
 		{
 			pxArchive* pxArchivePtr = new pxArchive();
@@ -146,6 +178,61 @@ class pxArchiveTest : public testing::Test
 			EXPECT_TRUE(0 == sCode);
 			
 		}
+
+                void pxArchivegetFileNameTest()
+                {
+	            pxArchivePtr = new pxArchive();
+	            urlStr = "supportfiles/sample.zip";
+	            EXPECT_EQ(RT_OK, pxArchivePtr->initFromUrl(urlStr));
+	            EXPECT_TRUE(strcmp("supportfiles/sample.zip", pxArchivePtr->getName().cString()) == 0);
+                }
+
+                void pxArchiveisFileTrueTest()
+                {
+	            pxArchivePtr = new pxArchive();
+	            urlStr = "supportfiles/simple.js";
+	            EXPECT_EQ(RT_OK, pxArchivePtr->initFromUrl(urlStr));
+	            EXPECT_TRUE(true == pxArchivePtr->isFile());
+                }
+
+                void pxArchiveisFileFalseTest()
+                {
+	            pxArchivePtr = new pxArchive();
+	            urlStr = "supportfiles/sample.zip";
+	            EXPECT_EQ(RT_OK, pxArchivePtr->initFromUrl(urlStr));
+	            EXPECT_TRUE(false == pxArchivePtr->isFile());
+                }
+
+                void pxArchivegetFileDataNonZipTest()
+                {
+                    pxArchivePtr = new pxArchive();
+                    urlStr = "supportfiles/simple.js";
+                    EXPECT_EQ(RT_OK, pxArchivePtr->initFromUrl(urlStr));
+                    rtData d;
+                    EXPECT_EQ(RT_OK, pxArchivePtr->getFileData("", d));
+                    EXPECT_TRUE(d.length() > 0);
+                }
+
+                void pxArchivegetFileDataZipTest()
+                {
+                    pxArchivePtr = new pxArchive();
+                    urlStr = "supportfiles/sample.zip";
+                    EXPECT_EQ(RT_OK, pxArchivePtr->initFromUrl(urlStr));
+                    rtData d;
+                    EXPECT_EQ(RT_OK, pxArchivePtr->getFileData("test.html", d));
+                    EXPECT_TRUE(d.length() > 0);
+                }
+
+                void pxArchivegetFileDataUnavailableTest()
+                {
+                    pxArchivePtr = new pxArchive();
+                    urlStr = "supportfiles/notthere.zip";
+	            EXPECT_EQ(RT_OK, pxArchivePtr->initFromUrl(urlStr));
+                    rtData d;
+                    EXPECT_EQ(RT_ERROR, pxArchivePtr->getFileData("test.html",d));
+                    EXPECT_TRUE(d.length() == 0);
+                }
+
 	private:
 		rtObjectRef obj;
 		int32_t sCode = 0;
@@ -162,6 +249,7 @@ TEST_F(pxArchiveTest, pxArchiveCompleteTest)
 	pxArchiveinitFromUrlTestLoadFail();
 	pxArchiveinitFromUrlTestLoadSuccess();
 	pxArchiveinitFromUrlTestLoadZip();	
+	pxArchiveinitFromUrlFromZipTest();	
 	pxArchiveready();
 	pxArchiveloadStatus();
 	pxArchivegetFileAsString();
@@ -169,5 +257,11 @@ TEST_F(pxArchiveTest, pxArchiveCompleteTest)
 	pxArchiveFileName();
 	pxArchiveFileNameValidation1();
 	pxArchiveFileNameValidation2();
+    pxArchivegetFileNameTest();
+	pxArchiveisFileTrueTest();
+    pxArchiveisFileFalseTest();
+    pxArchivegetFileDataNonZipTest();
+    pxArchivegetFileDataZipTest();
+    pxArchivegetFileDataUnavailableTest();
 }
 

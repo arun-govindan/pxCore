@@ -1,6 +1,6 @@
 /*
 
- rtCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -96,6 +96,9 @@ class rtFileCache
 
     /* populate the existing files in cache along with size in mFileSizeMap */
     void populateExistingFiles();
+
+    /* erase the map data of the cached file */
+    void eraseData(rtString& filename);
 
     /* member variables */
     int64_t mMaxSize;

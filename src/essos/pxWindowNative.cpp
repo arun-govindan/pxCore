@@ -1,5 +1,21 @@
-// pxCore CopyRight 2005-2006 John Robinson
-// Portable Framebuffer and Windowing Library
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 // pxWindowNative.cpp
 
 #include "../pxCore.h"
@@ -132,6 +148,78 @@ static EssKeyListener keyListener=
         keyPressed,
         keyReleased
     };
+
+#ifdef ESSOS_SETTINGS_AND_TOUCH_SUPPORT
+
+static void displaySize( void */*userData*/, int width, int height )
+{
+  std::vector<pxWindowNative*> windowVector = pxWindow::getNativeWindows();
+  std::vector<pxWindowNative*>::iterator i;
+  for (i = windowVector.begin(); i < windowVector.end(); i++)
+  {
+    pxWindowNative* w = (*i);
+    w->onSizeUpdated(width,height);
+  }
+}
+
+static EssSettingsListener settingsListener =
+   {
+     displaySize
+   };
+
+static void touchDown( void */*userData*/, int id, int x, int y )
+{
+  std::vector<pxWindowNative*> windowVector = pxWindow::getNativeWindows();
+  std::vector<pxWindowNative*>::iterator i;
+  for (i = windowVector.begin(); i < windowVector.end(); i++)
+  {
+    pxWindowNative* w = (*i);
+    w->onTouchDown(id, x, y);
+  }
+}
+
+static void touchUp( void */*userData*/, int id )
+{
+  std::vector<pxWindowNative*> windowVector = pxWindow::getNativeWindows();
+  std::vector<pxWindowNative*>::iterator i;
+  for (i = windowVector.begin(); i < windowVector.end(); i++)
+  {
+    pxWindowNative* w = (*i);
+    w->onTouchUp(id);
+  }
+}
+
+static void touchMotion( void */*userData*/, int id, int x, int y )
+{
+  std::vector<pxWindowNative*> windowVector = pxWindow::getNativeWindows();
+  std::vector<pxWindowNative*>::iterator i;
+  for (i = windowVector.begin(); i < windowVector.end(); i++)
+  {
+    pxWindowNative* w = (*i);
+    w->onTouchMotion(id, x, y);
+  }
+}
+
+static void touchFrame( void */*userData*/ )
+{
+  std::vector<pxWindowNative*> windowVector = pxWindow::getNativeWindows();
+  std::vector<pxWindowNative*>::iterator i;
+  for (i = windowVector.begin(); i < windowVector.end(); i++)
+  {
+    pxWindowNative* w = (*i);
+    w->onTouchFrame();
+  }
+}
+
+static EssTouchListener touchListener=
+{
+   touchDown,
+   touchUp,
+   touchMotion,
+   touchFrame
+};
+
+#endif //ESSOS_SETTINGS_AND_TOUCH_SUPPORT
 
 static void pointerMotion( void */*userData*/, int x, int y )
 {
@@ -288,8 +376,38 @@ pxError pxWindow::init(int left, int top, int width, int height)
             }
         }
 
+        int keyInitialDelay = 500;
+        char const *keyDelay = getenv("SPARK_KEY_INITIAL_DELAY");
+        if (keyDelay)
+        {
+            int value = atoi(keyDelay);
+            if (value > 0)
+            {
+                keyInitialDelay = value;
+            }
+        }
+
+        int keyRepeatInterval = 250;
+        char const *repeatInterval = getenv("SPARK_KEY_REPEAT_INTERVAL");
+        if (repeatInterval)
+        {
+            int value = atoi(repeatInterval);
+            if (value > 0)
+            {
+                keyRepeatInterval = value;
+            }
+        }
+
+
+        mLastWidth = width;
+        mLastHeight = height;
+        mResizeFlag = true;
+
+        registerWindow(this);
+
         bool error = false;
         rtLogInfo("using wayland: %s\n", useWayland ? "true" : "false");
+        rtLogInfo("initial key delay: %d repeat interval: %d", keyInitialDelay, keyRepeatInterval);
         d->ctx = EssContextCreate();
 
         if (d->ctx)
@@ -312,6 +430,26 @@ pxError pxWindow::init(int left, int top, int width, int height)
             {
                 error = true;
             }
+#ifdef ESSOS_SETTINGS_AND_TOUCH_SUPPORT
+            if ( !EssContextSetTouchListener( d->ctx, 0, &touchListener ) )
+            {
+                error= true;
+            }
+#endif //ESSOS_SETTINGS_AND_TOUCH_SUPPORT
+            if ( !EssContextSetKeyRepeatInitialDelay(d->ctx, keyInitialDelay))
+            {
+                error = true;
+            }
+            if ( !EssContextSetKeyRepeatPeriod(d->ctx, keyRepeatInterval))
+            {
+                error = true;
+            }
+#ifdef ESSOS_SETTINGS_AND_TOUCH_SUPPORT
+            if (!EssContextSetSettingsListener(d->ctx, 0, &settingsListener))
+            {
+                error = true;
+            }
+#endif //ESSOS_SETTINGS_AND_TOUCH_SUPPORT
             if ( !error )
             {
                 if ( !EssContextStart( d->ctx ) )
@@ -330,11 +468,8 @@ pxError pxWindow::init(int left, int top, int width, int height)
             }
         }
 
-        mLastWidth = width;
-        mLastHeight = height;
-        mResizeFlag = true;
+        eglSurfaceAttrib(eglGetCurrentDisplay(), eglGetCurrentSurface(EGL_DRAW), EGL_SWAP_BEHAVIOR, EGL_BUFFER_PRESERVED);
 
-        registerWindow(this);
         this->onCreate();
     }
     return PX_OK;
@@ -473,7 +608,6 @@ void pxWindowNative::runEventLoop()
 {
     exitFlag = false;
     displayRef dRef;
-    essosDisplay* eDisplay = dRef.getDisplay();
     std::vector<pxWindowNative*> windowVector = pxWindowNative::getNativeWindows();
 
     int framerate = ESSOS_PX_CORE_FPS;
@@ -527,6 +661,42 @@ void pxWindowNative::cleanupEssos()
 
     EssContextDestroy( eDisplay->ctx );
     eDisplay->ctx = NULL;
+}
+
+void pxWindowNative::onSizeUpdated(int width, int height)
+{
+  mLastWidth = width;
+  mLastHeight = height;
+  mResizeFlag = true;
+  onSize(width, height);
+}
+
+
+void pxWindowNative::onTouchDown(int id, int x, int y)
+{
+  (void)id;
+  (void)x;
+  (void)y;
+  //TODO
+}
+
+void pxWindowNative::onTouchUp(int id)
+{
+  (void)id;
+  //TODO
+}
+
+void pxWindowNative::onTouchMotion(int id, int x, int y)
+{
+  (void)id;
+  (void)x;
+  (void)y;
+  //TODO
+}
+
+void pxWindowNative::onTouchFrame()
+{
+  //TODO
 }
 
 void pxWindowNative::animateAndRender()

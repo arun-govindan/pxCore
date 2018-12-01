@@ -1,6 +1,6 @@
 /*
 
- rtCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -73,17 +73,19 @@ extern "C" time_t timegm(struct tm * a_tm)
 }
 #endif
 
-rtHttpCacheData::rtHttpCacheData():mExpirationDate(0),mUpdated(false)
+rtHttpCacheData::rtHttpCacheData():mExpirationDate(0),mUpdated(false),mFileName()
 {
   fp = NULL;
 }
 
-rtHttpCacheData::rtHttpCacheData(const char* url):mUrl(url),mExpirationDate(0),mUpdated(false)
+rtHttpCacheData::rtHttpCacheData(const char* url) :
+     mUrl(url), mExpirationDate(0), mUpdated(false), mFileName()
 {
   fp = NULL;
 }
 
-rtHttpCacheData::rtHttpCacheData(const char* url, const char* headerMetadata, const char* data, int size):mUrl(url),mExpirationDate(0),mUpdated(false)
+rtHttpCacheData::rtHttpCacheData(const char* url, const char* headerMetadata, const char* data, size_t size) :
+     mUrl(url), mExpirationDate(0), mUpdated(false), mFileName()
 {
   if ((NULL != headerMetadata) && (NULL != data))
   {
@@ -122,6 +124,12 @@ void rtHttpCacheData::populateHeaderMap()
       {
         key = attribute.substr(0,name_end_pos);
       }
+
+      // Accomadate lowercase from NPM "http-server" - https://www.npmjs.com/package/http-server
+      //
+      if(key == "cache-control")
+          key = "Cache-Control";
+
       size_t cReturn_nwLnPos  = key.find_first_of("\r");
       if (string::npos != cReturn_nwLnPos)
         key.erase(cReturn_nwLnPos,1);
@@ -151,11 +159,13 @@ void rtHttpCacheData::populateHeaderMap()
   }
 }
 
-rtString rtHttpCacheData::expirationDate()
+rtString rtHttpCacheData::expirationDate() const
 {
   char buffer[100];
+  struct tm local_tm;
+
   memset(buffer,0,100);
-  strftime(buffer, 100, "%Y-%m-%d %H:%M:%S", localtime(&mExpirationDate));
+  strftime(buffer, 100, "%Y-%m-%d %H:%M:%S", localtime_r(&mExpirationDate, &local_tm));
   return rtString(buffer);
 }
 
@@ -201,7 +211,7 @@ bool rtHttpCacheData::isWritableToCache()
 
 void rtHttpCacheData::setAttributes(char* rawAttributes)
 {
-  mHeaderMetaData.init((uint8_t*)rawAttributes,strlen(rawAttributes));
+  mHeaderMetaData.init((uint8_t*)rawAttributes, (uint32_t) strlen(rawAttributes));
   populateHeaderMap();
   setExpirationDate();
 }
@@ -229,6 +239,17 @@ rtError rtHttpCacheData::data(rtData& data)
 
   populateExpirationDateFromCache();
 
+  if (mHeaderMap.end() != mHeaderMap.find("ETag"))
+  {
+    rtError res =  handleEtag(data);
+    if (RT_OK != res)
+      return RT_ERROR;
+    if (mUpdated)
+    {
+      return RT_OK;
+    }
+  }
+
   bool revalidate =  false;
   bool revalidateOnlyHeaders = false;
 
@@ -247,6 +268,30 @@ rtError rtHttpCacheData::data(rtData& data)
       return RT_ERROR;
   }
 
+  if (false == readFileData())
+    return RT_ERROR;
+
+  data.init(mData.data(),mData.length());
+
+  if (true == revalidateOnlyHeaders)
+  {
+    mUpdated = true; //headers  modified , so rewriting the cache with new header data
+  }
+  return RT_OK;
+}
+
+void rtHttpCacheData::setData(rtData& cacheData)
+{
+  mData.init(cacheData.data(),cacheData.length());
+}
+
+rtError rtHttpCacheData::deferCacheRead(rtData& data)
+{
+  if (NULL == fp)
+    return RT_ERROR;
+
+  populateExpirationDateFromCache();
+
   if (mHeaderMap.end() != mHeaderMap.find("ETag"))
   {
     rtError res =  handleEtag(data);
@@ -258,20 +303,33 @@ rtError rtHttpCacheData::data(rtData& data)
     }
   }
 
-  if (false == readFileData())
-    return RT_ERROR;
+  bool revalidate =  false;
+  bool revalidateOnlyHeaders = false;
 
-  data.init(mData.data(),mData.length());
+  rtError res;
+  res = calculateRevalidationNeed(revalidate,revalidateOnlyHeaders);
+
+  if (RT_OK != res)
+    return res;
+
+  if (true == revalidate)
+    return performRevalidation(data);
+
+  if (true == revalidateOnlyHeaders)
+  {
+    if (RT_OK != performHeaderRevalidation())
+      return RT_ERROR;
+  }
+
+  char invalidData[8] = "Invalid";
+  mData.init((uint8_t*)invalidData, sizeof(invalidData));
+  data.init(mData.data(), mData.length());
+
   if (true == revalidateOnlyHeaders)
   {
     mUpdated = true; //headers  modified , so rewriting the cache with new header data
   }
   return RT_OK;
-}
-
-void rtHttpCacheData::setData(rtData& cacheData)
-{
-  mData.init(cacheData.data(),cacheData.length());
 }
 
 rtError rtHttpCacheData::url(rtString& url) const
@@ -300,9 +358,18 @@ void rtHttpCacheData::setFilePointer(FILE* openedDescriptor)
   fp = openedDescriptor;
 }
 
+FILE* rtHttpCacheData::filePointer(void)
+{
+  return fp;
+}
+
+void rtHttpCacheData::setFileName(rtString& fileName)
+{
+  mFileName = fileName;
+}
+
 void rtHttpCacheData::setExpirationDate()
 {
-  string expirationDate = "";
   bool foundMaxAge = false;
   if (mHeaderMap.end() != mHeaderMap.find("Cache-Control"))
   {
@@ -390,7 +457,7 @@ rtError rtHttpCacheData::calculateRevalidationNeed(bool& revalidate, bool& reval
 bool rtHttpCacheData::handleDownloadRequest(vector<rtString>& headers,bool downloadBody)
 {
   rtFileDownloadRequest* downloadRequest = NULL;
-  downloadRequest = new rtFileDownloadRequest(mUrl, this);
+  downloadRequest = new rtFileDownloadRequest(mUrl, this, NULL);
   downloadRequest->setAdditionalHttpHeaders(headers);
 
   if (!downloadBody)
@@ -398,12 +465,20 @@ bool rtHttpCacheData::handleDownloadRequest(vector<rtString>& headers,bool downl
 
   if (false == rtFileDownloader::instance()->downloadFromNetwork(downloadRequest))
   {
+     rtLogWarn("download failed %s Error: %s HTTP Status Code: %ld",
+                downloadRequest->fileUrl().cString(),
+                downloadRequest->errorString().cString(),
+                downloadRequest->httpStatusCode());
      delete downloadRequest;
      return false;
   }
 
   if ((downloadRequest->httpStatusCode() == 404) || (downloadRequest->httpStatusCode() == 403))
   {
+    rtLogWarn("download failed %s Error: %s HTTP Status Code: %ld",
+               downloadRequest->fileUrl().cString(),
+               downloadRequest->errorString().cString(),
+               downloadRequest->httpStatusCode());
     delete downloadRequest;
     return false;
   }
@@ -429,8 +504,8 @@ bool rtHttpCacheData::readFileData()
   char *contentsData = NULL;
   char* tmp = NULL;
   char buffer[100];
-  int bytesCount = 0;
-  int totalBytes = 0;
+  size_t bytesCount = 0;
+  uint32_t totalBytes = 0;
   while (!feof(fp))
   {
     bytesCount = fread(buffer,1,100,fp);
@@ -527,22 +602,31 @@ rtError rtHttpCacheData::performHeaderRevalidation()
 
 rtError rtHttpCacheData::handleEtag(rtData& data)
 {
-  rtString headerOption = "If-None-Match:";
-  headerOption.append(mHeaderMap["ETag"].cString());
-  vector<rtString> headers;
-  headers.push_back(headerOption);
-
-  if (!handleDownloadRequest(headers))
+  #ifdef PX_ETAG_AVOID_NONSTALE
+  if (isExpired())
   {
-    return RT_ERROR;
-  }
+  #endif
+    rtLogInfo("performing etag request");
+    rtString headerOption = "If-None-Match:";
+    headerOption.append(mHeaderMap["ETag"].cString());
+    vector<rtString> headers;
+    headers.push_back(headerOption);
 
-  if (mUpdated)
-  {
-    populateHeaderMap();
-    setExpirationDate();
-    data.init(mData.data(),mData.length());
-    fclose(fp);
+    if (!handleDownloadRequest(headers))
+    {
+      return RT_ERROR;
+    }
+
+    if (mUpdated)
+    {
+      rtLogInfo("ETAG update found for url(%s) filename(%s)", mUrl.cString(), mFileName.cString());
+      populateHeaderMap();
+      setExpirationDate();
+      data.init(mData.data(),mData.length());
+      fclose(fp);
+    }
+  #ifdef PX_ETAG_AVOID_NONSTALE
   }
+  #endif
   return RT_OK;
 }

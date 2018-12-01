@@ -21,6 +21,8 @@ then
 
   if [ "$(uname)" = "Darwin" ]; then
     ./configure --with-darwinssl
+    #Removing api definition for Yosemite compatibility.
+    sed -i '' '/#define HAVE_CLOCK_GETTIME_MONOTONIC 1/d' lib/curl_config.h
   else
       if [ $(echo "$(openssl version | cut -d' ' -f 2 | cut -d. -f1-2)>1.0" | bc) ]; then
           echo "Openssl is too new for this version of libcurl.  Opting for gnutls instead..."
@@ -35,6 +37,7 @@ then
       fi
   fi
 
+  
   make all "-j${make_parallel}"
   cd ..
 
@@ -82,7 +85,7 @@ fi
 
 #--------- ZLIB
 
-if [ ! -e ./zlib/libz.1.2.8.dylib ] ||
+if [ ! -e ./zlib/libz.1.2.11.dylib ] ||
    [ "$(uname)" != "Darwin" ]
 then
 
@@ -124,44 +127,54 @@ fi
 
 #--------- LIBNODE
 
-if [ ! -e node/out/Release/libnode.48.dylib ] ||
+if [ ! -e node/libnode.dylib ] ||
    [ "$(uname)" != "Darwin" ]
 then
 
   cd node
   ./configure --shared
   make "-j${make_parallel}"
-  ln -sf libnode.so.48 out/Release/obj.target/libnode.so
-  ln -sf libnode.48.dylib out/Release/libnode.dylib
+  ln -sf out/Release/obj.target/libnode.so.48 libnode.so.48
+  ln -sf libnode.so.48 libnode.so
+  ln -sf out/Release/libnode.48.dylib libnode.48.dylib
+  ln -sf libnode.48.dylib libnode.dylib
   cd ..
 
 fi
 
-#-------- BREAKPAD (Non -macOS)
-if [ "$(uname)" != "Darwin" ]; then
+#--------- uWebSockets
+if [ ! -e ./uWebSockets/libuWS.dylib ] ||
+   [ "$(uname)" != "Darwin" ]
+then
 
-  cd breakpad
-  quilt push -aq || test $? = 2
-  ./configure
+  cd uWebSockets
+  mv Makefile.build Makefile
   make
   cd ..
 
 fi
+#--------
 
-#-------- BODYMOVIN
-#
-# TODO:  ensure that "npm" is installed ... possibly via "brew install npm" (on Mac)
-#
+# v8
+# todo - uncomment - for now build v8 with buildV8.sh directly
+#bash buildV8.sh
 
-# cd bodymovin
-# if [ ! -e node_modules ] ||
-#   [ "$(uname)" != "Darwin" ]
-# then
-#   npm install
-# fi
+#-------- BREAKPAD (Non -macOS)
 
-# gulp
-# cd ..
+if [ "$(uname)" != "Darwin" ]; then
+  ./breakpad/build.sh
+fi
+
+#-------- NANOSVG
+
+./nanosvg/build.sh
+
+#-------- DUKTAPE
+
+if [ ! -e dukluv/build/libduktape.a ]
+then
+  ./dukluv/build.sh
+fi
 
 #--------
 

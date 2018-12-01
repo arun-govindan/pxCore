@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -63,10 +63,10 @@ pxWaylandContainer::~pxWaylandContainer()
   mWayland = NULL;
 }
 
-void pxWaylandContainer::dispose()
+void pxWaylandContainer::dispose(bool pumpJavascript)
 {
    setView(NULL);
-   pxObject::dispose();
+   pxObject::dispose(pumpJavascript);
 }
 
 void pxWaylandContainer::invalidate( pxRect* r )
@@ -164,7 +164,7 @@ rtError pxWaylandContainer::setDisplayName(const char* s)
 
 rtError pxWaylandContainer::setCmd(const char* s)
 {
-  int regcmdlen;
+  size_t regcmdlen;
   const char *regcmd;
   const char *p= strpbrk( s, " ");
   std::map<string, string>::iterator it= gWaylandAppsMap.end();
@@ -186,7 +186,7 @@ rtError pxWaylandContainer::setCmd(const char* s)
       }
       if ( regcmdlen > 0 )
       {
-         binary = rtString(regcmd, regcmdlen);
+         binary = rtString(regcmd, (uint32_t) regcmdlen);
       }
     }
   }
@@ -209,7 +209,7 @@ rtError pxWaylandContainer::setCmd(const char* s)
                (regcmdlen > 1) &&
                (regcmd[regcmdlen-1] == '%'))
           {
-             binary = rtString(regcmd, regcmdlen-1);
+             binary = rtString(regcmd, (uint32_t) (regcmdlen-1) );
              binary.append( args );
           }
        }
@@ -318,7 +318,18 @@ void pxWaylandContainer::sendPromise()
 {
   if(mInitialized && !((rtPromise*)mReady.getPtr())->status())
   {
-    if (access( mBinary.cString(), F_OK ) != -1)
+    int32_t processNameIndex = mBinary.find(0, ' ');
+    rtString processName;
+    if (processNameIndex > 0)
+    {
+      processName = mBinary.substring(0, processNameIndex);
+    }
+    else
+    {
+      processName = mBinary;
+    }
+    rtLogInfo("process name: %s orig: %s", processName.cString(), mBinary.cString());
+    if (access( processName.cString(), F_OK ) != -1)
     {
       rtLogDebug("sending resolve promise");
       mReady.send("resolve",this);
@@ -331,23 +342,23 @@ void pxWaylandContainer::sendPromise()
   }
 }
 
-rtError pxWaylandContainer::suspend(bool& b)
+rtError pxWaylandContainer::suspend(const rtValue &v, bool& b)
 {
   b = false;
   if ( mWayland )
   {
-    mWayland->suspend();
+    mWayland->suspend(v);
     b = true;
   }
   return RT_OK;
 }
 
-rtError pxWaylandContainer::resume(bool& b)
+rtError pxWaylandContainer::resume(const rtValue& v, bool& b)
 {
   b = false;
   if ( mWayland )
   {
-    mWayland->resume();
+    mWayland->resume(v);
     b = true;
   }
   return RT_OK;
@@ -391,6 +402,7 @@ rtDefineProperty(pxWaylandContainer,fillColor);
 rtDefineProperty(pxWaylandContainer,api);
 rtDefineProperty(pxWaylandContainer,remoteReady);
 rtDefineProperty(pxWaylandContainer,server);
+rtDefineProperty(pxWaylandContainer,hasApi);
 rtDefineMethod(pxWaylandContainer, suspend);
 rtDefineMethod(pxWaylandContainer, resume);
 rtDefineMethod(pxWaylandContainer, destroy);

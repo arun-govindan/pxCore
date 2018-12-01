@@ -1,8 +1,28 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 
 px.import({ scene: 'px:scene.1.js',
-             keys: 'px:tools.keys.js'
+             keys: 'px:tools.keys'
 }).then(function importsAreReady(imports)
 {
+    var defaultTextColor = 0x303030ff
+
     var scene = imports.scene;
     var keys  = imports.keys;
 
@@ -212,10 +232,10 @@ px.import({ scene: 'px:scene.1.js',
         var assets = [fontRes, inputRes, inputBg, clipRect, prompt, textInput, textView, cursor, selection];
 
         Promise.all(assets)
-            .catch((err) => {
+            .catch(function (err) {
                 console.log(">>> Loading Assets ... err = " + err);
             })
-            .then((success, failure) => {
+            .then(function (success, failure)  {
 
                 clipRect.interactive  = false;
                 prompt.interactive    = false;
@@ -328,7 +348,7 @@ px.import({ scene: 'px:scene.1.js',
 
 //             console.log(">>> textView.onMouseEnter   showFocus:" + showFocus );
 
-            if(showFocus)
+            if(this.showFocus)
             {
                 textInputBG.a = 0.5;
             }
@@ -340,14 +360,14 @@ px.import({ scene: 'px:scene.1.js',
 
 //            console.log(">>> textView.onMouseLeave   showFocus:" + showFocus + " keepFocus:  " + keepFocus);
 
-            if(showFocus)
+            if(this.showFocus)
             {
                 textInputBG.a = 0.25;
             }
 
             buttonDown = false;
 
-            if(keepFocus === false)
+            if(this.keepFocus === false)
             {
                 hideCursor();
                 clearSelection();
@@ -375,17 +395,21 @@ px.import({ scene: 'px:scene.1.js',
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        container.on("onFocus", function (e) {
-
+        textInput.on("onFocus", function (e) {
             showCursor();
-
-// console.log(" OnFocus()    textInput.focus ");// = " + textInput.focus);
+            textInput.textColor = defaultTextColor
+            // console.log(" OnFocus()    textInput.focus ");// = " + textInput.focus);
         });
+
+        textInput.on("onBlur", function (e) {
+            hideCursor()
+        })
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         textInput.on("onChar", function (e) {
 //            console.log("#######  onChar ... char: "+e.charCode+" ... BEFORE  text: ["+textInput.text +"] cursor_pos = " + cursor_pos);
+            textInput.textColor = defaultTextColor
 
             if (e.charCode == keys.ENTER)  // <<<  ENTER KEY
                 return;
@@ -668,7 +692,7 @@ px.import({ scene: 'px:scene.1.js',
             var metrics;
             var pos_x = 0;
 
-            let lo = -1, hi = array.length;
+            var lo = -1, hi = array.length;
             while (1 + lo !== hi)
             {
                 var mi = lo + ((hi - lo) >> 1);

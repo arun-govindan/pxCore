@@ -1,26 +1,50 @@
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 //"use strict";
+
+var isDuk=(typeof Duktape != "undefined")?true:false;
+var isV8=(typeof _isV8 != "undefined")?true:false;
 
 var url = require('url');
 var path = require('path');
 var vm = require('vm');
 var Logger = require('rcvrcore/Logger').Logger;
 var SceneModuleLoader = require('rcvrcore/SceneModuleLoader');
-var XModule = require('rcvrcore/XModule').XModule;
-var xmodImportModule = require('rcvrcore/XModule').importModule;
+var XModule = require('rcvrcore/XModule');
 var loadFile = require('rcvrcore/utils/FileUtils').loadFile;
+var loadFileWithSparkPermissionsCheck = require('rcvrcore/utils/FileUtils').loadFileWithSparkPermissionsCheck;
 var SceneModuleManifest = require('rcvrcore/SceneModuleManifest');
 var JarFileMap = require('rcvrcore/utils/JarFileMap');
 var AsyncFileAcquisition = require('rcvrcore/utils/AsyncFileAcquisition');
+var AccessControl = isV8?null:require('rcvrcore/utils/AccessControl');
+var WrapObj = require('rcvrcore/utils/WrapObj');
 
 var log = new Logger('AppSceneContext');
 //overriding original timeout and interval functions
-var SetTimeout = setTimeout;
-var ClearTimeout = clearTimeout;
-var SetInterval = setInterval;
-var ClearInterval = clearInterval;
+var SetTimeout = (isDuk || isV8)?timers.setTimeout:setTimeout;
+var ClearTimeout = (isDuk || isV8)?timers.clearTimeout:clearTimeout;
+var SetInterval = (isDuk || isV8)?timers.setInterval:setInterval;
+var ClearInterval = (isDuk || isV8)?timers.clearInterval:clearInterval;
 
-var http_wrap = require('rcvrcore/http_wrap');
-var https_wrap = require('rcvrcore/https_wrap');
+
+var http_wrap = isV8?null:require('rcvrcore/http_wrap');
+var https_wrap = isV8?null:require('rcvrcore/https_wrap');
 
 function AppSceneContext(params) {
 
@@ -46,7 +70,8 @@ function AppSceneContext(params) {
   this.scriptMap = {};
   this.xmoduleMap = {};
   this.asyncFileAcquisition = new AsyncFileAcquisition(params.scene);
-  this.lastHrTime = process.hrtime();
+  this.accessControl = isV8?null:new AccessControl(params.scene);
+  this.lastHrTime = isDuk?uv.hrtime():(isV8?uv_hrtime():process.hrtime());
   this.resizeTimer = null;
   this.topXModule = null;
   this.jarFileMap = new JarFileMap();
@@ -54,19 +79,32 @@ function AppSceneContext(params) {
   //array to store the list of pending timers
   this.timers = [];
   this.timerIntervals = [];
-
+  this.webSocketManager = null;
+  this.httpwrap = isV8?null:new http_wrap(this.accessControl);
+  this.httpswrap = isV8?null:new https_wrap(this.accessControl);
+  this.disableFilePermissionCheck = isV8?true:this.innerscene.sparkSetting("disableFilePermissionCheck");
+  if (undefined == this.disableFilePermissionCheck)
+  {
+    this.disableFilePermissionCheck = false;
+  }
+  // event received indicators for close and terminate
+  this.isCloseEvtRcvd = false;
+  this.isTermEvtRcvd = false;
+  this.termEvent = null;
   log.message(4, "[[[NEW AppSceneContext]]]: " + this.packageUrl);
 }
+
 
 AppSceneContext.prototype.loadScene = function() {
   //log.info("loadScene() - begins    on ctx: " + getContextID() );
   var urlParts = url.parse(this.packageUrl, true);
   var fullPath = this.packageUrl;
+  var platform = (isDuk)?uv.platform:(isV8?uv_platform():process.platform);
   if (fullPath.substring(0, 4) !== "http") {
     if( fullPath.charAt(0) === '.' ) {
       // local file system
       this.defaultBaseUri = ".";
-    } else if( process.platform === 'win32' && fullPath.charAt(1) === ':' ) {
+    } else if( platform === 'win32' && fullPath.charAt(1) === ':' ) {
         // Windows OS, so take the url as the whole file path
         urlParts.pathname = this.packageUrl;
     }
@@ -82,7 +120,14 @@ AppSceneContext.prototype.loadScene = function() {
 if( fullPath !== null)
   this.loadPackage(fullPath);
 
-this.innerscene.on('onSceneTerminate', function (e) {
+function terminateScene() {
+    var e = this.termEvent;
+    if (null != this.webSocketManager)
+    {
+       this.webSocketManager.clearConnections();
+       delete this.webSocketManager;
+    }
+    this.webSocketManager = null;
     //clear the timers and intervals on close
     var ntimers = this.timers.length;
     for (var i=0; i<ntimers; i++)
@@ -99,80 +144,86 @@ this.innerscene.on('onSceneTerminate', function (e) {
       for(var k in this.innerscene.api) { delete this.innerscene.api[k]; }
     }
 
-    this.innerscene.api = null;
+    if ((undefined != this.innerscene) && (null != this.innerscene))
+    {
+      this.innerscene.api = null;
+    }
     this.innerscene = null;
-    this.sandbox.xmodule = null;
-    this.sandbox.require = null;
-    this.sandbox.sandboxName = null;
-    this.sandbox.runtime = null;
-    this.sandbox.theNamedContext = null;
-    this.sandbox.Buffer = null;
-    this.sandbox.setTimeout = null;
-    this.sandbox.setInterval = null;
-    this.sandbox.clearTimeout = null;
-    this.sandbox.clearInterval = null;
-    this.sandbox.importTracking = {};
+    if ((undefined != this.sandbox) && (null != this.sandbox))
+    {
+      this.sandbox.sandboxName = null;
+      if ((undefined != this.sandbox.xmodule) && (null != this.sandbox.xmodule))
+      {
+        this.sandbox.xmodule.freeResources();
+      }
+      this.sandbox.xmodule = null;
+      this.sandbox.console = null;
+      this.sandbox.runtime = null;
+      this.sandbox.process = null;
+      this.sandbox.urlModule = null;
+      this.sandbox.queryStringModule = null;
+      this.sandbox.theNamedContext = null;
+      this.sandbox.Buffer = null;
+      this.sandbox.require = null;
+      this.sandbox.global = null;
+      this.sandbox.setTimeout = null;
+      this.sandbox.setInterval = null;
+      this.sandbox.clearTimeout = null;
+      this.sandbox.clearInterval = null;
+      for(var k in this.sandbox.importTracking) { delete this.sandbox.importTracking[k]; }
+      this.sandbox.importTracking = null;
+      for(var k in this.sandbox) { delete this.sandbox[k]; }
+    }
     this.sandbox = null;
-    this.scriptMap = null;
     for(var xmodule in this.xmoduleMap) {
       this.xmoduleMap[xmodule].freeResources();
+      delete this.xmoduleMap[xmodule];
     }
     this.xmoduleMap = null;
+    if (null != this.topXModule)
+      this.topXModule.freeResources();
     this.topXModule = null;
     this.jarFileMap = null;
     for(var key in this.scriptMap) {
       this.scriptMap[key].scriptObject = null;
       this.scriptMap[key].readyListeners = null;
+      delete this.scriptMap[key];
     }
     this.scriptMap = null;
+    if (null != this.sceneWrapper)
+      this.sceneWrapper.close();
     this.sceneWrapper = null;
-  }.bind(this));
-
-if (false) {
-if (false) {
-  // This no longer has access to the container
-  this.container.on('onKeyDown', function (e) {
-    log.message(2, "container(" + this.packageUrl + "): keydown:" + e.keyCode);
-  }.bind(this));
-
-}
-  this.innerscene.on('onKeyDown', function (e) {
-    log.message(2, "innerscene(" + this.packageUrl + "): keydown:" + e.keyCode);
-  }.bind(this));
-
-  this.innerscene.root.on('onKeyDown', function (e) {
-    log.message(2, "innerscene root(" + this.packageUrl + "): keydown:" + e.keyCode);
-  }.bind(this));
-}
-
-if (false) {
-  // JRJRJR No longer get this event...
-  this.innerscene.on('onComplete', function (e) {
-//    this.container = null;
-    this.innerscene = null;
-    this.sandbox = null;
-    for(var key in this.scriptMap) {
-      this.scriptMap[key].scriptObject = null;
-      this.scriptMap[key].readyListeners = null;
-/* JRJRJR
-      delete this.scriptMap[key].scriptObject;
-      delete this.scriptMap[key].readyListeners;
-*/
+    this.rpcController = null;
+    if (this.accessControl) {
+      this.accessControl.destroy();
+      this.accessControl = null;
     }
-    this.scriptMap = null;
-    for(var xmodule in this.xmoduleMap) {
-      this.xmoduleMap[xmodule].freeResources();
-    }
-    this.xmoduleMap = null;
-    this.topXModule = null;
-    this.jarFileMap = null;
-    this.sceneWrapper = null;
-    global.gc();
-  }.bind(this));
+    this.httpwrap = null;
+    this.httpswrap = null;
+    this.isCloseEvtRcvd = false;
+    this.isTermEvtRcvd = false;
+    this.termEvent = null;
 }
+
+this.innerscene.on('onSceneTerminate', function(e) { 
+     this.isTermEvtRcvd = true;
+     this.termEvent = e;
+     // make sure we are sending terminate event only after close event
+     if (true == this.isCloseEvtRcvd) {
+       terminateScene.bind(this)(); 
+     }
+  }.bind(this));
+
+this.innerscene.on('onClose', function() {
+    // make sure terminate event is sent after immediately if onClose comes after it
+    if (true == this.isTermEvtRcvd)
+    {
+      terminateScene.bind(this)();
+    }
+    this.isCloseEvtRcvd = true;
+  }.bind(this));
 
   //log.info("loadScene() - ends    on ctx: " + getContextID() );
-
 };
 
 AppSceneContext.prototype.loadPackage = function(packageUri) {
@@ -187,18 +238,25 @@ AppSceneContext.prototype.loadPackage = function(packageUri) {
         _this.getFile("package.json").then( function(packageFileContents) {
           var manifest = new SceneModuleManifest();
           manifest.loadFromJSON(packageFileContents);
+          console.info("AppSceneContext#loadScenePackage0");
           _this.runScriptInNewVMContext(packageUri, moduleLoader, manifest.getConfigImport());
-        }).catch(function(e){
-          _this.runScriptInNewVMContext(packageUri, moduleLoader, null);
+          console.info("AppSceneContext#loadScenePackage0 done");
+        }).catch(function (e) {
+            console.info("AppSceneContext#loadScenePackage1");
+            _this.runScriptInNewVMContext(packageUri, moduleLoader, null);
+            console.info("AppSceneContext#loadScenePackage1 done");
         });
       } else {
         var manifest = moduleLoader.getManifest();
+        console.info("AppSceneContext#loadScenePackage2");
         _this.runScriptInNewVMContext(packageUri, moduleLoader, manifest.getConfigImport());
+        console.info("AppSceneContext#loadScenePackage2 done");
       }
     })
-    .catch(function(err) {
+    .catch(function (err) {
+      console.info("AppSceneContext#loadScenePackage3");
       thisMakeReady(false, {});
-      console.error("AppSceneContext#loadScenePackage: Error: Did not load fileArchive: Error=" + err );
+      console.error("AppSceneContext#loadScenePackage: Error: Did not load fileArchive: Error=",err );
     });
 };
 
@@ -217,17 +275,39 @@ var setTimeoutCallback = function() {
   ClearTimeout(this);
 };
 
-function createModule_pxScope(xModule) {
-  return {
-    log: xModule.log,
-    import: xmodImportModule.bind(xModule),
+function getBaseFilePath()
+{
+  return this;
+}
+
+function createModule_pxScope(xModule, isImported) {
+  var params  = {     log: xModule.log,
+    import: xModule.importModule.bind(xModule),
     configImport: xModule.configImport.bind(xModule),
     resolveFilePath: xModule.resolveFilePath.bind(xModule),
     appQueryParams: this.queryParams,
-    getPackageBaseFilePath: getPackageBaseFilePath.bind(this),
-    getFile: getFile.bind(this),
+    getPackageBaseFilePath: this.getPackageBaseFilePath.bind(this),
+    getFile: this.getFile.bind(this),
     getModuleFile: xModule.getFile.bind(xModule)
   };
+
+  //xModule.basePath is used for imported files, as xModule is per javascript file basis
+  if (true == isImported)
+  {
+    if (xModule.basePath == "")
+    {
+      params.getBaseFilePath = getBaseFilePath.bind("./");
+    }
+    else
+    {
+      params.getBaseFilePath = getBaseFilePath.bind(xModule.basePath+"/");
+    }
+  }
+  else
+  {
+    params.getBaseFilePath = params.getPackageBaseFilePath;
+  }
+  return params;
 }
 
 AppSceneContext.prototype.runScriptInNewVMContext = function (packageUri, moduleLoader, configImport) {
@@ -268,74 +348,131 @@ AppSceneContext.prototype.runScriptInNewVMContext = function (packageUri, module
   var self = this;
   var newSandbox;
   try {
-    var requireMethod = function (pkg) {
-      log.message(3, "old use of require not supported: " + pkg);
-      // TODO: remove
-      return requireIt(pkg);
-    };
-
-    var requireFileOverridePath = process.env.PXSCENE_REQUIRE_ENABLE_FILE_PATH;
-    var requireEnableFilePath = "/tmp/";
-    if (process.env.HOME && process.env.HOME !== '') {
-      requireEnableFilePath = process.env.HOME;
-    }
-    if (requireFileOverridePath && requireFileOverridePath !== ''){
-      requireEnableFilePath = requireFileOverridePath;
-    }
-
-    var fs = require("fs");
-    var requireEnableFile = requireEnableFilePath + "/.pxsceneEnableRequire";
-    if (fs.existsSync(requireEnableFile)) {
-      console.log("enabling pxscene require support");
-      requireMethod = require;
-    }
-    
-    newSandbox = {
-      sandboxName: "InitialSandbox",
-      xmodule: xModule,
-      console: console,
-      runtime: apiForChild,
-      process: process,
-      urlModule: require("url"),
-      queryStringModule: require("querystring"),
-      theNamedContext: "Sandbox: " + uri,
-      Buffer: Buffer,
-      require: requireMethod,
-      global: global,
-      setTimeout: function (callback, after, arg1, arg2, arg3) {
-        //pass the timers list to callback function on timeout
-        var timerId = SetTimeout(setTimeoutCallback, after, this.timers, function() { callback(arg1, arg2, arg3)});
-        this.timers.push(timerId);
-        return timerId;
-      }.bind(this),
-      clearTimeout: function (timer) {
-        var index = this.timers.indexOf(timer);
-        if (index != -1)
-        {
-          this.timers.splice(index,1);
+    if (!isDuk && !isV8) {
+      var requireMethod = function (pkg) {
+        if (typeof requireIt === "function") { 
+          // TODO: remove
+          log.message(1, "old use of require not supported: " + pkg);
+          return requireIt(pkg);
         }
-        ClearTimeout(timer);
-      }.bind(this),
-      setInterval: function (callback, repeat, arg1, arg2, arg3) {
-        var intervalId = SetInterval(callback, repeat, arg1, arg2, arg3);
-        this.timerIntervals.push(intervalId);
-        return intervalId;
-      }.bind(this),
-      clearInterval: function (timer) {
-        var index = this.timerIntervals.indexOf(timer);
-        if (index != -1)
-        {
-          this.timerIntervals.splice(index,1);
+        else{
+          log.message(1, "old use of require not supported: " + pkg);
         }
-        ClearInterval(timer);
-      }.bind(this),
-      importTracking: {}
-    }; // end sandbox
+      };
+
+      var requireFileOverridePath = process.env.PXSCENE_REQUIRE_ENABLE_FILE_PATH;
+      var requireEnableFilePath = "/tmp/";
+      if (process.env.HOME && process.env.HOME !== '') {
+        requireEnableFilePath = process.env.HOME;
+      }
+      if (requireFileOverridePath && requireFileOverridePath !== '') {
+        requireEnableFilePath = requireFileOverridePath;
+      }
+
+      var fs = require("fs");
+      var requireEnableFile = requireEnableFilePath + "/.pxsceneEnableRequire";
+      if (fs.existsSync(requireEnableFile)) {
+        console.log("enabling pxscene require support");
+        requireMethod = require;
+      }
+    }
+
+    if (!isDuk && !isV8) {
+      var processWrap = WrapObj(process, {"binding":function() { throw new Error("process.binding is not supported"); }});
+      var globalWrap = WrapObj(global, {"process":processWrap});
+
+      newSandbox = {
+        sandboxName: "InitialSandbox",
+        xmodule: xModule,
+        console: console,
+        runtime: apiForChild,
+        urlModule: require("url"),
+        queryStringModule: require("querystring"),
+        theNamedContext: "Sandbox: " + uri,
+        Buffer: Buffer,
+        process: processWrap,
+        require: requireMethod,
+        global: globalWrap,
+        setTimeout: function (callback, after, arg1, arg2, arg3) {
+          //pass the timers list to callback function on timeout
+          var timerId = SetTimeout(setTimeoutCallback, after, this.timers, function() { callback(arg1, arg2, arg3)});
+          this.timers.push(timerId);
+          return timerId;
+        }.bind(this),
+        clearTimeout: function (timer) {
+          var index = this.timers.indexOf(timer);
+          if (index != -1)
+          {
+            this.timers.splice(index,1);
+          }
+          ClearTimeout(timer);
+        }.bind(this),
+        setInterval: function (callback, repeat, arg1, arg2, arg3) {
+          var intervalId = SetInterval(callback, repeat, arg1, arg2, arg3);
+          this.timerIntervals.push(intervalId);
+          return intervalId;
+        }.bind(this),
+        clearInterval: function (timer) {
+          var index = this.timerIntervals.indexOf(timer);
+          if (index != -1)
+          {
+            this.timerIntervals.splice(index,1);
+          }
+          ClearInterval(timer);
+        }.bind(this),
+        importTracking: {}
+      };
+    }
+    else if (isV8) 
+    {
+      newSandbox = {
+        sandboxName: "InitialSandbox",
+        xmodule: xModule,
+        console: console,
+        timers: timers,
+        global: global,
+        isV8: isV8,
+        setTimeout: setTimeout,
+        clearTimeout: clearTimeout,
+        setInterval: setInterval,
+        clearInterval: clearInterval,
+        runtime: apiForChild,
+        urlModule: require("url"),
+        require: require,
+        loadUrl: loadUrl,
+        queryStringModule: require("querystring"),
+        theNamedContext: "Sandbox: " + uri,
+        //Buffer: Buffer,
+        importTracking: {},
+        print: print,
+        getScene: getScene,
+        makeReady: makeReady,
+        getContextID: getContextID
+      }; // end sandbox
+
+      queryStringModule = require("querystring");
+      urlModule = require("url");
+    }
+    else
+    {
+      newSandbox = {
+        sandboxName: "InitialSandbox",
+        xmodule: xModule,
+        console: console,
+        runtime: apiForChild,
+        urlModule: require("url"),
+        queryStringModule: require("querystring"),
+        theNamedContext: "Sandbox: " + uri,
+        //Buffer: Buffer,
+        importTracking: {}
+      }; // end sandbox
+    }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     xModule.initSandbox(newSandbox);
     thisAppSceneContext.sandbox = newSandbox; //xModule.sandbox;
+
 
     try {
       //JRJRJRJR  This line causing a garbage collection leak...
@@ -343,22 +480,38 @@ AppSceneContext.prototype.runScriptInNewVMContext = function (packageUri, module
 //      this.innerscene.api = {isReady:false, onModuleReady:onAppModuleReady.bind(this) };
 
       var sourceCode = AppSceneContext.wrap(code);
-      //var script = new vm.Script(sourceCode, fname);
-      //var moduleFunc = script.runInNewContext(newSandbox, {filename:fname, displayErrors:true});
-      // fix debug under windows issue
-      var moduleFunc = vm.runInNewContext(sourceCode, newSandbox, {filename:path.normalize(fname), displayErrors:true});
-
-      if (process._debugWaitConnect) {
-        // Set breakpoint on module start
-        if (process.env.BREAK_ON_SCRIPTSTART != 1)
-          delete process._debugWaitConnect;
-        const Debug = vm.runInDebugContext('Debug');
-        Debug.setBreakPoint(moduleFunc, 0, 0);
-      }
-
+      log.message(4, "createModule_pxScope.call()");
       var px = createModule_pxScope.call(this, xModule);
-      var rtnObject = moduleFunc(px, xModule, fname, this.basePackageUri);
-      rtnObject = xModule.exports;
+      log.message(4, "createModule_pxScope.call() done");
+      if (isDuk) {
+        vm.runInNewContext(sourceCode, newSandbox, {
+          filename: path.normalize(fname),
+          displayErrors: true
+        }, px, xModule, fname, this.basePackageUri);
+      } else if (isV8) {
+        var moduleFunc = vm.runInNewContext(sourceCode, newSandbox, {
+          filename: path.normalize(fname),
+          displayErrors: true
+        }, px, xModule, fname, this.basePackageUri);
+
+        moduleFunc(px, xModule, fname, this.basePackageUri);
+
+      } else {
+        var moduleFunc = vm.runInNewContext(sourceCode, newSandbox, {
+          filename: path.normalize(fname),
+          displayErrors: true
+        });
+        if (process._debugWaitConnect) {
+          // Set breakpoint on module start
+          if (process.env.BREAK_ON_SCRIPTSTART != 1)
+            delete process._debugWaitConnect;
+          const Debug = vm.runInDebugContext('Debug');
+          Debug.setBreakPoint(moduleFunc, 0, 0);
+        }
+        moduleFunc(px, xModule, fname, this.basePackageUri);
+      }
+      log.message(4, "vm.runInNewContext done");
+
 /*
 if (false) {
       // TODO do the old scenes context get released when we reload a scenes url??
@@ -375,31 +528,23 @@ if (false) {
 }
 */
 
-      //console.log("Main Module: readyPromise=" + xModule.moduleReadyPromise);
+      console.log("Main Module: readyPromise=" + xModule.moduleReadyPromise);
       if( !xModule.hasOwnProperty('moduleReadyPromise') || xModule.moduleReadyPromise === null ) {
-//        this.container.makeReady(true); // DEPRECATED ?
-
-//        this.innerscene.api = {isReady:true};
-        this.makeReady(true,{});
-      }
-      else
-      {
-        var modulePromise = xModule.moduleReadyPromise;
-        var thisMakeReady = this.makeReady; // NB:  capture for async then() closure.
-
-        modulePromise.then( function(i)
-        {
+        console.log("Main module[" + self.packageUrl + "] about to notify. xModule.exports:"+(typeof xModule.exports));
+        self.innerscene.api = xModule.exports;
+        this.makeReady(true, xModule.exports);
+        console.log("Main module[" + self.packageUrl + "] about to notify done");
+      } else {
+        xModule.moduleReadyPromise.then( function() {
+          console.log("Main module[" + self.packageUrl + "] about to notify. xModule.exports:"+(typeof xModule.exports));
           self.innerscene.api = xModule.exports;
-
-          thisMakeReady(true,xModule.exports);
-
-        }).catch( function(err)
-        {
+          self.makeReady(true, xModule.exports);
+          console.log("Main module[" + self.packageUrl + "] about to notify done");
+        }).catch( function(err) {
           console.error("Main module[" + self.packageUrl + "]" + " load has failed - on failed imports: " + ", err=" + err);
-          thisMakeReady(false,{});
-        } );
+          self.makeReady(false, {});
+        });
       }
-
     }
     catch (err) {
       console.error("failed to run app:" + uri);
@@ -428,6 +573,7 @@ if (false) {
 AppSceneContext.prototype.getPackageBaseFilePath = function() {
   var fullPath;
   var pkgPart;
+  var platform = (isDuk)?uv.platform:(isV8?uv_platform():process.platform);
   if (this.basePackageUri.substring(0, 4) !== "http") {
     if (this.basePackageUri.charAt(0) == '.') {
       pkgPart = this.basePackageUri.substring(1);
@@ -436,9 +582,9 @@ AppSceneContext.prototype.getPackageBaseFilePath = function() {
     }
     if (pkgPart.charAt(0) == '/') {
       fullPath = this.defaultBaseUri + pkgPart;
-    } else if(process.platform === 'win32' && pkgPart.charAt(1) === ':' ) {
+    } else if(platform === 'win32' && pkgPart.charAt(1) === ':' ) {
       // Windows OS and using drive name, take the pkg part as the file path
-      fullPath = pkgPart;   
+      fullPath = pkgPart;
     } else {
       fullPath = this.defaultBaseUri + "/" + pkgPart;
     }
@@ -446,16 +592,10 @@ AppSceneContext.prototype.getPackageBaseFilePath = function() {
     fullPath = this.basePackageUri;
   }
 
+  fullPath = fullPath.replace('%20', '\ '); // replace HTML escaped spaces with C/C++ escaping
+
   return fullPath;
 };
-
-function getPackageBaseFilePath() {
-  return this.getPackageBaseFilePath();
-}
-
-function getFile(filePath) {
-  return this.getFile(filePath);
-}
 
 AppSceneContext.prototype.getModuleFile = function(filePath, xModule) {
   var promise = this.jarFileMap.getArchiveFileAsync(xModule.getJarName(), filePath);
@@ -471,7 +611,14 @@ AppSceneContext.prototype.getModuleFile = function(filePath, xModule) {
 
 AppSceneContext.prototype.getFile = function(filePath) {
   log.message(4, "getFile: requestedFile=" + filePath);
-  return loadFile(filePath);
+  if ((isV8) || ("true" == this.disableFilePermissionCheck || true == this.disableFilePermissionCheck))
+  {
+    return loadFile(filePath);
+  }
+  else
+  {
+    return loadFileWithSparkPermissionsCheck(this.accessControl, this.httpwrap, this.httpswrap, filePath);
+  }
 };
 
 AppSceneContext.prototype.resolveModulePath = function(filePath, currentXModule) {
@@ -506,7 +653,12 @@ AppSceneContext.prototype.include = function(filePath, currentXModule) {
   var origFilePath = filePath;
 
   return new Promise(function (onImportComplete, reject) {
-    if( filePath === 'px' || filePath === 'url' || filePath === 'querystring' || filePath === 'htmlparser') {
+    if (/^(px|url|querystring|htmlparser|crypto|oauth)$/.test(filePath)) {
+      if (isDuk && filePath === 'htmlparser') {
+        console.log("Not permitted to use the module " + filePath);
+        reject("include failed due to module not permitted");
+        return;
+      }
       // built-ins
       var modData = require(filePath);
       onImportComplete([modData, origFilePath]);
@@ -515,12 +667,50 @@ AppSceneContext.prototype.include = function(filePath, currentXModule) {
       console.log("Not permitted to use the module " + filePath);
       reject("include failed due to module not permitted");
       return;
-    } else if( filePath === 'net' || filePath === 'ws' ) {
-      modData = require('rcvrcore/' + filePath + '_wrap');
+    } else if(filePath === 'ws') {
+      if (isDuk) {
+        console.log("creating websocket instance")
+        modData = websocket;
+        onImportComplete([modData, origFilePath]);
+        return;
+      } else {
+        var wsdata = require('rcvrcore/ws_wrap');
+        _this.webSocketManager = new wsdata();
+        var WebSocket = (function() {
+          var context = this;
+          function WebSocket(address, protocol, options) {
+            var client = context.webSocketManager.WebSocket(address, protocol, options);
+            return client;
+          }
+          return WebSocket;
+         }.bind(_this))();
+        modData = WebSocket;
+        onImportComplete([modData, origFilePath]);
+        return;
+      }
+    } else if( filePath === 'http' || filePath === 'https' ) {
+      if (isV8) {
+        modData = require(filePath);
+        onImportComplete([modData, origFilePath]);
+        return;
+      }
+     if (filePath === 'http')
+      {
+        modData = _this.httpwrap;
+      }
+      else
+      {
+        modData = _this.httpswrap;
+      }
       onImportComplete([modData, origFilePath]);
       return;
-    } else if( filePath === 'http' || filePath === 'https' ) {
-      modData = filePath === 'http' ? new http_wrap(_this.innerscene) : new https_wrap(_this.innerscene);
+    } else if( filePath === 'http2' ) {
+      if (isV8) {
+        modData = require('https');
+        onImportComplete([modData, origFilePath]);
+        return;
+      }
+      modData = require('rcvrcore/http2_wrap');
       onImportComplete([modData, origFilePath]);
       return;
     } else if( filePath.substring(0, 9) === "px:scene.") {
@@ -534,6 +724,11 @@ AppSceneContext.prototype.include = function(filePath, currentXModule) {
       return;
     } else if( filePath.substring(0,9) === "px:tools.") {
       modData = require('rcvrcore/tools/' + filePath.substring(9));
+      onImportComplete([modData, origFilePath]);
+      return;
+    }
+    else if( filePath.substring(0,7) === "optimus") {
+      modData = require('rcvrcore/optimus.js');
       onImportComplete([modData, origFilePath]);
       return;
     }
@@ -576,7 +771,7 @@ AppSceneContext.prototype.include = function(filePath, currentXModule) {
         // file acquired
         _this.processCodeBuffer(origFilePath, filePath, currentXModule, moduleLoader, onImportComplete, reject);
       }).catch(function(err){
-        console.error("Error: could not load file " + filePath  + ", err=" + err);
+        console.error("Error: could not load file ", filePath, ", err=", err);
         reject("include failed");
       });
   });
@@ -630,35 +825,42 @@ AppSceneContext.prototype.processCodeBuffer = function(origFilePath, filePath, c
   }
 
   var sourceCode = AppSceneContext.wrap(codeBuffer);
-  var moduleFunc = vm.runInContext(sourceCode, _this.sandbox, {filename:filePath, displayErrors:true});
-  var px = createModule_pxScope.call(this, xModule);
   log.message(4, "RUN " + filePath);
-  moduleFunc(px, xModule, filePath, filePath);
+  var px = createModule_pxScope.call(this, xModule, true);
+  if (isDuk) {
+    vm.runInNewContext(sourceCode, _this.sandbox, { filename: filePath, displayErrors: true },
+                         px, xModule, filePath, filePath);
+  } else if (isV8) {
+    var moduleFunc = vm.runInNewContext(sourceCode, _this.sandbox, { filename: filePath, displayErrors: true },
+                         px, xModule, filePath, filePath);
+
+    moduleFunc(px, xModule, filePath, filePath);
+  } else {
+    var moduleFunc = vm.runInContext(sourceCode, _this.sandbox, {filename:filePath, displayErrors:true});
+    moduleFunc(px, xModule, filePath, filePath);
+  }
   log.message(4, "RUN DONE: " + filePath);
   this.setXModule(filePath, xModule);
 
   // Set up a async wait until module indicates it's completly ready
-  var modReadyPromise = xModule.moduleReadyPromise;
-  if( modReadyPromise === null ) {
+  if( !xModule.moduleReadyPromise ) {
     // No use of px.import or it's possible that these exports have already been added
+    log.message(4, "["+xModule.name+"]: <" + filePath + "> MODULE INDICATES IT'S FULLY READY. xModule.exports:" + (typeof xModule.exports));
     _this.addScript(filePath, 'ready', xModule.exports);
+    log.message(4, "is about to notify [" + currentXModule.name + "] that <" + filePath + "> has been imported and is ready");
     onImportComplete([xModule.exports, origFilePath]);
-    log.message(4, "AppSceneContext after notifying[:" + currentXModule.name + "] about import<" + filePath + ">");
-    // notify 'ready' listeners
+    log.message(4, "after notifying [:" + currentXModule.name + "] about import <" + filePath + ">");
     _this.callModuleReadyListeners(filePath, xModule.exports);
-
   } else {
     // Now wait for module to indicate that it's fully ready to go
-    modReadyPromise.then(function () {
-      log.message(7, "AppSceneContext[xModule=" + xModule.name + "]: is notified that <" + filePath + "> MODULE INDICATES IT'S FULLY READY");
+    xModule.moduleReadyPromise.then(function () {
+      log.message(4, "["+xModule.name+"]: <" + filePath + "> MODULE INDICATES IT'S FULLY READY. xModule.exports:" + (typeof xModule.exports));
       _this.addScript(filePath, 'loaded', xModule.exports);
       _this.setScriptStatus(filePath, 'ready');
-      log.message(7, "AppSceneContext: is about to notify [" + currentXModule.name + "] that <" + filePath + "> has been imported and is ready");
+      log.message(4, "is about to notify [" + currentXModule.name + "] that <" + filePath + "> has been imported and is ready");
       onImportComplete([xModule.exports, origFilePath]);
-      log.message(8, "AppSceneContext after notifying[:" + currentXModule.name + "] about import<" + filePath + ">");
-      // notify 'ready' listeners
+      log.message(4, "after notifying [:" + currentXModule.name + "] about import <" + filePath + ">");
       _this.callModuleReadyListeners(filePath, xModule.exports);
-
     }).catch(function (error) {
       onImportRejected("include(2): failed while waiting for module <" + filePath + "> to be ready for [" + currentXModule.name + "] - error=" + error);
     });
@@ -666,9 +868,9 @@ AppSceneContext.prototype.processCodeBuffer = function(origFilePath, filePath, c
 };
 
 AppSceneContext.prototype.onResize = function(resizeEvent) {
-  var hrTime = process.hrtime(this.lastHrTime);
+  var hrTime = isDuk?uv.hrtime():(isV8?uv_hrtime():process.hrtime(this.lastHrTime));
   var deltaMillis = (hrTime[0] * 1000 + hrTime[1] / 1000000);
-  this.lastHrTime = process.hrtime();
+  this.lastHrTime = isDuk?uv.hrtime():(isV8?uv_hrtime():process.hrtime());
   if( deltaMillis > 300 ) {
     if( this.resizeTimer !== null ) {
       clearTimeout(this.resizeTimer);
@@ -701,6 +903,9 @@ AppSceneContext.prototype.callModuleReadyListeners = function(moduleName, module
     if( listeners !== null && listeners.length !== 0 ) {
       for(var k = 0; k < listeners.length; ++k) {
         listeners[k](moduleExports);
+      }
+      for(var k = 0; k < listeners.length; ++k) {
+        listeners.pop();
       }
     }
     this.scriptMap[moduleName].readyListeners = null;

@@ -1,5 +1,21 @@
-// pxCore CopyRight 2005-2006 John Robinson
-// Portable Framebuffer and Windowing Library
+/*
+
+pxCore Copyright 2005-2018 John Robinson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 // pxWindowNativeGlut.cpp
 
 #include "../pxCore.h"
@@ -340,7 +356,30 @@ void pxWindowNative::onGlutMouse(int button, int state, int x, int y)
       }
     }
   }
-  // else some GLUT impls uses button 3,4 etc for mouse wheel
+  else
+  // some GLUT impls uses button 3,4 etc for mouse wheel
+  if ((button == 3) || (button == 4)) // It's a wheel event
+  {
+    int dir = (button == 3) ? 1 : -1;
+
+    pxWindowNative* w = getWindowFromGlutID(glutGetWindow());
+    if (w)
+      w->onScrollWheel( dir * ((x > 0) ? 1 : -1),
+                        dir * ((y > 0) ? 1 : -1) );
+  }
+}
+
+
+// The second parameter gives the direction of the scroll. Values of +1 is forward, -1 is backward.
+
+void pxWindowNative::onGlutScrollWheel(int button, int dir, int x, int y)
+{
+  if ((button == 3) || (button == 4)) // It's a wheel event
+  {
+    pxWindowNative* w = getWindowFromGlutID(glutGetWindow());
+    if (w)
+      w->onScrollWheel(dir * x, dir * y);
+  }
 }
 
 void pxWindowNative::onGlutMouseMotion(int x, int y)
@@ -609,6 +648,7 @@ pxError pxWindow::init(int left, int top, int width, int height)
     glutReshapeFunc(onGlutReshape);
     glutMouseFunc(onGlutMouse);
     glutMotionFunc(onGlutMouseMotion);
+    glutMouseWheelFunc(onGlutScrollWheel);
     glutPassiveMotionFunc(onGlutMousePassiveMotion);
     glutKeyboardFunc(onGlutKeyboard);
 //#ifdef PX_USE_GLUT_ON_CLOSE

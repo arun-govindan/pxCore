@@ -1,8 +1,8 @@
 # testRunner
 
-We use [testRunner](https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/testRunner.js) to run JavaScript tests that exercise pxObjects and the JavaScript wrappers. By default, testRunner will run the tests located here: [tests.json](https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/tests.json).  For our Travis CI builds, however, the tests.json from pxCore/tests/pxScene2d/tests/testRunner/tests.json will be used.
+We use [testRunner](https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/testRunner_v7.js) to run JavaScript tests that exercise pxObjects and the JavaScript wrappers. When no _tests_ parameter is passed to it, testRunner will run the tests located here: [tests.json](https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/tests.json).  For our Travis CI builds, however, the tests to run will come from two test files in pxCore/tests/pxScene2d/tests/testRunner: tests.json and testsDesktop.json.  All new tests should be added to tests.json unless the test is a special case that would exceed the memory constraints of embedded devices.  For those special tests, they should be added to testsDesktop.json, instead.
 
-*testRunner* will run all tests defined in tests.json and will report success and failure from those tests.  When tests have completed, it will display a Results page indicating how many tests succeeded and how many failed. If there are failures, the details of those failures will be displayed as a list on screen.  These results will also be output to the console/log.
+*testRunner* will run all tests defined in the json files passed to it and will report success and failure from those tests.  When tests have completed, it will display a Results page indicating how many tests succeeded and how many failed. If there are failures, the details of those failures will be displayed as a list on screen.  These results will also be output to the console/log.
 
 ## Adding a testRunner Test:
 1. Create a test JavaScript file according to instructions in [Defining Tests](#defining-test-functions-to-be-run). We suggest creating a pull request to add the test to [pxscene](https://github.com/pxscene/pxscene/tree/gh-pages) for open source availability.
@@ -17,7 +17,7 @@ A test is defined in tests.json as an object with the following properties:
   * if the test url is not relative to the testRunner.js, specify the full url to the js file to test, then set the "useBaseURI" property to false, eg, "useBaseURI":"false"
 * _title_: the title that you would like to appear when testRunner reports results for these tests
 Alternatively, you can add a js file to the test run without adding any tests or apis to the js page itself, for instance if you want to ensure that a particular page or app always successfully runs.  You can do this by specifying a different set of properties in the tests.json: 
-{"url":"https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/gallery/coverflowtest_v2.js", "title":"coverflow", "useBaseURI":"false", "timelimit":"60000"}
+{"url":"https://www.pxscene.org/examples/px-reference/gallery/coverflowtest_v2.js", "title":"coverflow", "useBaseURI":"false", "timelimit":"60000"}
 * _timeToRun_: number of milliseconds for this test scene to be left to run.  
 * _useBaseURI_: whether or not the url specified uses a path relative to testRunner.js; if value is "false", the url is expected to be the full path to the js file to load.  Defaults to "false".
 
@@ -176,7 +176,7 @@ Tests can be run using either the checked-in/auto-deployed version of *testRunne
 
 Run deployed versions of *testRunner* and *tests.json*:
 ``` 
-./pxscene.sh https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/testRunner.js
+./pxscene.sh https://www.pxscene.org/examples/px-reference/test-run/testRunner.js
 ```
 
 *or* 
@@ -190,6 +190,6 @@ Run local versions of *testRunner* and *tests.json*:
 
 Run deployed *testRunner* with local *tests.json* file via queryParam "tests":
 ``` 
-./pxscene.sh https://px-apps.sys.comcast.net/pxscene-samples/examples/px-reference/test-run/testRunner.js?tests=file://{local_path_to_a_tests.json_file}
+./pxscene.sh https://www.pxscene.org/examples/px-reference/test-run/testRunner.js?tests=file://{local_path_to_a_tests.json_file}
 ```
 

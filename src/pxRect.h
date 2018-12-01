@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -106,6 +106,7 @@ public:
   
   bool isEmpty() const { return (mLeft >= mRight) || (mTop >= mBottom); }
   
+  int isEqual(const pxRect& r) { return (mLeft != r.left() || mTop != r.top() || mRight != r.right() || mBottom != r.bottom()) ? false : true; }
 private:
     int32_t mLeft, mTop, mRight, mBottom;
 };

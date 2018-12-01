@@ -26,39 +26,54 @@ $TRAVIS_BUILD_DIR/ci/monitor.sh &
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]
 then
-    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ]
+    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_EVENT_TYPE" = "api" ] || [ ! -z "${TRAVIS_TAG}" ]
     then
-      echo "Ignoring before install stage for $TRAVIS_EVENT_TYPE event";
+      sudo apt-get install jq
+      sudo apt-get install wget
       exit 0;
     fi
+fi
+
+#do the license check
+if [ "$TRAVIS_OS_NAME" = "linux" ] ;
+then
+  $TRAVIS_BUILD_DIR/ci/licenseScanner.sh
+  if [ "$?" != "0" ] 
+  then
+    printf "\n!*!*!* licenseScanner.sh detected files without proper license. Please refer to the logs above. !*!*!*\n"
+    exit 1;
+  fi
 fi
 
 #install necessary basic packages for linux and mac 
 if [ "$TRAVIS_OS_NAME" = "linux" ] ; 
 then 
   travis_retry sudo apt-get update
-  travis_retry sudo apt-get install git libglew-dev freeglut3 freeglut3-dev libgcrypt11-dev zlib1g-dev g++ libssl-dev nasm autoconf valgrind libyaml-dev lcov cmake  lighttpd gdb quilt
+  travis_retry sudo apt-get install git libglew-dev freeglut3 freeglut3-dev libgcrypt11-dev zlib1g-dev g++ libssl-dev nasm autoconf valgrind libyaml-dev lcov cmake gdb quilt libuv-dev
 fi
 
 if [ "$TRAVIS_OS_NAME" = "osx" ] ;
 then
   brew update;
-  brew upgrade cmake;
+  #brew upgrade cmake;
+  brew install quilt
+  brew install libuv
   sudo /usr/sbin/DevToolsSecurity --enable
   lldb --version
   lldb --help
+  cmake --version
   man lldb
 fi
 
 #install lighttpd, code coverage binaries for mac
 if [ "$TRAVIS_OS_NAME" = "osx" ] ; 
 then
-  if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]
+  if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ -z "${TRAVIS_TAG}" ]
   then
-    brew install lighttpd
+#    brew install lighttpd
     brew install gcovr
     brew install lcov
-    brew install --HEAD ccache
+    brew install ccache
     ls -al $HOME/.ccache
   fi
 fi
@@ -104,7 +119,7 @@ fi
 
 
 #install codecov
-if [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]
+if ( [ "$TRAVIS_EVENT_TYPE" = "push" ] || [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] ) && [ -z "${TRAVIS_TAG}" ]
 then
 	if [ "$TRAVIS_OS_NAME" = "osx" ] ; 
 	then

@@ -1,6 +1,6 @@
 /*
 
- rtCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,28 +33,94 @@
 #include "pxOffscreen.h"
 #include "pxUtil.h"
 
+#include <openssl/md5.h>
+
 #define SUPPORT_PNG
 #define SUPPORT_JPG
 
-// Assume alpha is not premultiplied
-rtError pxLoadImage(const char *imageData, size_t imageDataSize,
-                    pxOffscreen &o)
-{
-  // Load as PNG...
-  rtError retVal = pxLoadPNGImage(imageData, imageDataSize, o);
+#include "rtRef.h"
+#include "rtObject.h"
 
-  if (retVal != RT_OK) // Failed ... trying as JPG
+  #include <stdio.h>
+  #include <string.h>
+  #include <float.h>
+
+  //#define STB_IMAGE_WRITE_IMPLEMENTATION
+  //#include "stb_image_write.h"
+  #define NANOSVG_ALL_COLOR_KEYWORDS  // Include full list of color keywords.
+  #define NANOSVG_IMPLEMENTATION      // Expands implementation
+  #include "nanosvg.h"
+  #define NANOSVGRAST_IMPLEMENTATION
+  #include "nanosvgrast.h"
+
+#ifdef SAFE_FREE
+#undef SAFE_FREE
+#endif
+#define SAFE_FREE(x)  do { free(x); (x) = NULL; } while(0)
+
+pxImageType getImageType( const uint8_t* data, size_t len ); //fwd
+
+class NSVGrasterizerEx
+{
+  public:
+       NSVGrasterizerEx()  {  rast = nsvgCreateRasterizer(); } // ctor
+      ~NSVGrasterizerEx()  {  nsvgDeleteRasterizer(rast);    } // dtor
+
+    NSVGrasterizer *getPtr() { return rast; };
+
+  private:
+    NSVGrasterizer *rast;
+
+}; // CLASS;
+
+static NSVGrasterizerEx rast;
+static rtMutex          rastMutex;
+
+
+// Assume alpha is not premultiplied
+rtError pxLoadImage(const char *imageData, size_t imageDataSize,  pxOffscreen &o,
+                        int32_t w /* = 0    */, int32_t h /* = 0    */,
+                         float sx /* = 1.0f */,  float sy /* = 1.0f */)
+{
+  pxImageType imgType = getImageType( (const uint8_t*) imageData, imageDataSize);
+  rtError retVal = RT_FAIL;
+
+  switch(imgType)
   {
+    case PX_IMAGE_PNG:
+         {
+           retVal = pxLoadPNGImage(imageData, imageDataSize, o);
+         }
+         break;
+
+    case PX_IMAGE_JPG:
+         {
 #ifdef ENABLE_LIBJPEG_TURBO
-    retVal = pxLoadJPGImageTurbo(imageData, imageDataSize, o);
-    if (retVal != RT_OK)
-    {
-      retVal = pxLoadJPGImage(imageData, imageDataSize, o);
-    }
+           retVal = pxLoadJPGImageTurbo(imageData, imageDataSize, o);
+           if (retVal != RT_OK)
+           {
+             retVal = pxLoadJPGImage(imageData, imageDataSize, o);
+           }
 #else
-    retVal = pxLoadJPGImage(imageData, imageDataSize, o);
+        retVal = pxLoadJPGImage(imageData, imageDataSize, o);
 #endif //ENABLE_LIBJPEG_TURBO
+         }
+         break;
+
+    case PX_IMAGE_SVG:
+    default:
+         {
+           retVal = pxLoadSVGImage(imageData, imageDataSize, o, w, h, sx, sy);
+         }
+         break;
+  }//SWITCH
+
+  if (retVal != RT_OK)
+  {
+    rtLogError("ERROR:  pxLoadImage() - failed" );
+    return retVal;
   }
+
 
   // TODO more sane image type detection and flow
 
@@ -66,14 +132,21 @@ rtError pxLoadImage(const char *imageData, size_t imageDataSize,
   return retVal;
 }
 
+// APNG looks like a PNG with extra chunks ... can fallback to display static PNG
+
 rtError pxLoadAImage(const char* imageData, size_t imageDataSize,
   pxTimedOffscreenSequence &s)
 {
   // Load as PNG...
   rtError retVal = pxLoadAPNGImage(imageData, imageDataSize, s);
 
-  if (retVal != RT_OK) // Failed ... trying as JPG
+  if (retVal != RT_OK) // Failed ... trying as JPG (why?)
   {
+#if 0
+    rtLogError("ERROR:  pxLoadAPNGImage() - failed to load APNG ... " );
+
+    return retVal;
+#else
     pxOffscreen o;
 #ifdef ENABLE_LIBJPEG_TURBO
     retVal = pxLoadJPGImageTurbo(imageData, imageDataSize, o);
@@ -86,15 +159,17 @@ rtError pxLoadAImage(const char* imageData, size_t imageDataSize,
 #endif //ENABLE_LIBJPEG_TURBO
     s.init();
     s.addBuffer(o,0);
+#endif // 0
   }
-  
-  return retVal;  
-}
 
+  return retVal;
+}
 
 // TODO Detection needs to be improved...
 // Handling jpeg as fallback now
-rtError pxLoadImage(const char *filename, pxOffscreen &b)
+rtError pxLoadImage(const char *filename, pxOffscreen &b,
+                        int32_t w /* = 0    */, int32_t h /* = 0    */,
+                         float sx /* = 1.0f */,  float sy /* = 1.0f */)
 {
   rtData d;
   rtError e = rtLoadFile(filename, d);
@@ -113,9 +188,14 @@ rtError pxStoreImage(const char *filename, pxOffscreen &b)
   return pxStorePNGImage(filename, b);
 }
 
-bool pxIsPNGImage(const char * /*imageData*/, size_t /*imageDataSize*/)
+bool pxIsPNGImage(rtData d)
 {
-  return true;
+  return (getImageType( (const uint8_t*) d.data(), d.length()) == PX_IMAGE_PNG);
+}
+
+bool pxIsPNGImage(const char *imageData, size_t imageDataSize)
+{
+  return (getImageType( (const uint8_t*) imageData, imageDataSize) == PX_IMAGE_PNG);
 }
 
 rtError pxLoadPNGImage(const char *filename, pxOffscreen &o)
@@ -359,7 +439,7 @@ rtError pxStorePNGImage(const char *filename, pxOffscreen &b, bool /*grayscale*/
  * conjunction with the documentation file libjpeg.txt.
  *
  * This code will not do anything useful as-is, but it may be helpful as a
- * skeleton for constructing routines that call the JPEG library.  
+ * skeleton for constructing routines that call the JPEG library.
  *
  * We present these routines in the same coding style used in the JPEG code
  * (ANSI function definitions, etc); but you are of course free to code your
@@ -651,9 +731,9 @@ my_error_exit(j_common_ptr cinfo)
  * temporary files are deleted if the program is interrupted.  See libjpeg.txt.
  */
 
-bool pxIsJPGImage(const char * /*imageData*/, size_t /*imageDataSize*/)
+bool pxIsJPGImage(const char *imageData, size_t imageDataSize)
 {
-  return false;
+  return (getImageType( (const uint8_t*) imageData, imageDataSize) == PX_IMAGE_JPG);
 }
 
 rtError pxLoadJPGImage(const char *filename, pxOffscreen &o)
@@ -708,7 +788,22 @@ rtError pxLoadJPGImageTurbo(const char *buf, size_t buflen, pxOffscreen &o)
     return RT_FAIL;// TODO : add grayscale support for libjpeg turbo.  falling back to libjpeg for now
   }
 
+  // limit memory usage to resolution 4096x4096
+  if (((size_t)width * height) > ((size_t)4096 * 4096))
+  {
+    rtLogError("Error libjpeg-turbo: image too large");
+    tjDestroy(jpegDecompressor);
+    return RT_FAIL;
+  }
+
   unsigned char *imageBuffer = tjAlloc(width * height * 3);
+
+  if (!imageBuffer)
+  {
+    rtLogError("Error allocating libjpeg-turbo buffer");
+    tjDestroy(jpegDecompressor);
+    return RT_FAIL;
+  }
 
   int result = tjDecompress2(jpegDecompressor, (unsigned char *)buf, buflen, imageBuffer, width, 0, height, TJPF_RGB /*(colorComponent == 3) ? TJPF_RGB : jpegColorspace*/, TJFLAG_FASTDCT);
 
@@ -901,9 +996,100 @@ rtError pxLoadJPGImage(const char *buf, size_t buflen, pxOffscreen &o)
   return RT_OK;
 }
 
+
+rtError pxStoreSVGImage(const char* /*filename*/, pxBuffer& /*b*/)  { return RT_FAIL; } // NOT SUPPORTED
+
+
+rtError pxLoadSVGImage(const char* buf, size_t buflen, pxOffscreen& o, int  w /* = 0    */,      int h /* = 0    */,
+                                                                     float sx /* = 1.0f */,   float sy /* = 1.0f */)
+{
+  rtMutexLockGuard  autoLock(rastMutex);
+
+  if (rast.getPtr() == NULL)
+  {
+    rtLogError("SVG:  No rasterizer available \n");
+    return RT_FAIL;
+  }
+
+  if (buf == NULL || buflen == 0 )
+  {
+    rtLogError("SVG:  Bad args.\n");
+    return RT_FAIL;
+  }
+
+  if (sx <= 0.0f || sy <= 0.0f)
+  {
+    rtLogError("SVG:  Bad image scale  sx: %f  sy: %f\n", sx, sy);
+    return RT_FAIL;
+  }
+
+  // NOTE:  'nanosvg' is *destructive* to the SVG source buffer
+  //
+  //        Pass it a copy !
+  //
+  void *buf_copy = malloc(buflen);
+  memcpy(buf_copy, buf, buflen);
+  
+  NSVGimage *image = nsvgParse( (char *) buf_copy, "px", 96.0f); // 96 dpi (suggested default)
+  free(buf_copy); // clean-up
+  if (image == NULL)
+  {
+    rtLogError("SVG:  Could not init decode SVG.\n");
+    return RT_FAIL;
+  }
+
+  int image_w = (int)image->width;  // parsed SVG image dimensions
+  int image_h = (int)image->height; // parsed SVG image dimensions
+
+  if (image_w == 0 || image_h == 0)
+  {
+    nsvgDelete(image);
+
+    rtLogError("SVG:  Bad image dimensions  WxH: %d x %d\n", image_w, image_h);
+    return RT_FAIL;
+  }
+
+  // Dimensions WxH ... *only* if no Scale XY
+  if( (sx == 1.0f && sy == 1.0f) && (w > 0 && h > 0) ) // <<< Use WxH only if no scale. Scale takes precedence
+  {
+    float ratioW = (float) w / (float) image_w;
+    float ratioH = (float) h / (float) image_h;
+
+    sx = sy = (ratioW < ratioH) ? ratioW : ratioH; // MIN()
+  }
+
+  o.initWithColor( (image_w * sx), (image_h * sy), pxClear); // default sized
+
+  nsvgRasterizeFull(rast.getPtr(), image, 0, 0, sx, sy,
+                    (unsigned char*) o.base(), o.width(), o.height(), o.width() *4);
+
+  nsvgDelete(image);
+
+  return RT_OK;
+}
+
+
+rtError pxLoadSVGImage(const char *filename, pxOffscreen &o, int  w /* = 0    */,      int h /* = 0    */,
+                                                           float sx /* = 1.0f */,   float sy /* = 1.0f */)
+{
+  rtData d;
+  rtError e = rtLoadFile(filename, d);
+  if (e == RT_OK)
+  {
+    // TODO get rid of the cast
+    e = pxLoadSVGImage((const char *)d.data(), d.length(), o, w, h, sx, sy);
+  }
+  else
+  {
+    rtLogError("Failed to load image file, %s.", filename);
+  }
+
+  return e;
+}
+
 rtError pxStoreJPGImage(char * /*filename*/, pxBuffer & /*b*/)
 {
-  return RT_FAIL;
+  return RT_FAIL; // NOT SUPPORTED
 }
 
 struct PngStruct
@@ -994,7 +1180,12 @@ rtError pxLoadPNGImage(const char *imageData, size_t imageDataSize,
     int height = png_get_image_height(png_ptr, info_ptr);
 
     png_byte color_type = png_get_color_type(png_ptr, info_ptr);
-    //png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+    png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+
+    if (bit_depth == 16)
+    {
+        png_set_strip_16(png_ptr);
+    }
 
     if (color_type == PNG_COLOR_TYPE_PALETTE)
     {
@@ -1037,7 +1228,16 @@ rtError pxLoadPNGImage(const char *imageData, size_t imageDataSize,
       }
       e = RT_OK;
     }
+    else
+    {
+      e = RT_FAIL;
+    }
   }
+  else
+  {
+    e = RT_FAIL;
+  }
+
 
   if (e == RT_OK)
   {
@@ -1114,10 +1314,6 @@ void BlendOver(unsigned char **rows_dst, unsigned char **rows_src, unsigned int 
 rtError pxLoadAPNGImage(const char *imageData, size_t imageDataSize,
                         pxTimedOffscreenSequence &s)
 {
-  s.init();
-
-  PngStruct pngStruct((char *)imageData, imageDataSize);
-
   if (!imageData)
   {
     rtLogError("FATAL: Invalid arguments - imageData = NULL");
@@ -1129,6 +1325,10 @@ rtError pxLoadAPNGImage(const char *imageData, size_t imageDataSize,
     rtLogError("FATAL: Invalid arguments - imageDataSize < 8");
     return RT_FAIL;
   }
+
+  s.init();
+
+  PngStruct pngStruct((char *)imageData, imageDataSize);
 
   unsigned char header[8]; // 8 is the maximum size that can be checked
 
@@ -1145,7 +1345,10 @@ rtError pxLoadAPNGImage(const char *imageData, size_t imageDataSize,
   }
 
   //unsigned int width, height, channels, rowbytes, size, i, j;
-  unsigned int width, height, rowbytes, size, i, j;
+  unsigned int width, height, i, j;
+
+  unsigned long size, rowbytes;
+
   png_bytepp rows_image;
   png_bytepp rows_frame;
   unsigned char *p_image;
@@ -1275,3 +1478,311 @@ rtError pxLoadAPNGImage(const char *imageData, size_t imageDataSize,
 
   return RT_OK;
 }
+
+rtString imageType2str(pxImageType t)
+{
+  switch(t)
+  {
+    case PX_IMAGE_JPG:      return rtString("PX_IMAGE_JPG");
+    case PX_IMAGE_PNG:      return rtString("PX_IMAGE_PNG");
+    case PX_IMAGE_GIF:      return rtString("PX_IMAGE_GIF");
+    case PX_IMAGE_TIFF:     return rtString("PX_IMAGE_TIFF");
+    case PX_IMAGE_BMP:      return rtString("PX_IMAGE_BMP");
+    case PX_IMAGE_WEBP:     return rtString("PX_IMAGE_WEBP");
+    case PX_IMAGE_ICO:      return rtString("PX_IMAGE_ICO");
+    case PX_IMAGE_SVG:      return rtString("PX_IMAGE_SVG");
+    default:
+    case PX_IMAGE_INVALID:  return rtString("PX_IMAGE_INVALID");
+  }
+}
+
+pxImageType getImageType( const uint8_t* data, size_t len )
+{
+  if ( data == NULL ) return PX_IMAGE_INVALID;
+  if ( len < 16 ) return PX_IMAGE_INVALID;
+
+  // .jpg:  FF D8 FF
+  // .png:  89 50 4E 47 0D 0A 1A 0A
+  // .gif:  GIF87a
+  //        GIF89a
+  // .tiff: 49 49 2A 00
+  //        4D 4D 00 2A
+  // .bmp:  BM
+  // .webp: RIFF ???? WEBP
+  // .ico   00 00 01 00
+  //        00 00 02 00 ( cursor files )
+
+  switch ( data[0] )
+  {
+    case (uint8_t)'\xFF':
+      return ( !strncmp( (const char*)data, "\xFF\xD8\xFF", 3 )) ?
+      PX_IMAGE_JPG : PX_IMAGE_INVALID;
+
+    case (uint8_t)'\x89':
+      return ( !strncmp( (const char*)data,
+                        "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A", 8 )) ?
+      PX_IMAGE_PNG : PX_IMAGE_INVALID;
+
+    case 'G':
+      return ( !strncmp( (const char*)data, "GIF87a", 6 ) ||
+              !strncmp( (const char*)data, "GIF89a", 6 ) ) ?
+      PX_IMAGE_GIF : PX_IMAGE_INVALID;
+
+    case 'I':
+      return ( !strncmp( (const char*)data, "\x49\x49\x2A\x00", 4 )) ?
+      PX_IMAGE_TIFF : PX_IMAGE_INVALID;
+
+    case 'M':
+      return ( !strncmp( (const char*)data, "\x4D\x4D\x00\x2A", 4 )) ?
+      PX_IMAGE_TIFF : PX_IMAGE_INVALID;
+
+    case 'B':
+      return (( data[1] == 'M' )) ?
+      PX_IMAGE_BMP : PX_IMAGE_INVALID;
+
+    case 'R':
+      if ( strncmp( (const char*)data,     "RIFF", 4 ))
+        return PX_IMAGE_INVALID;
+      if ( strncmp( (const char*)(data+8), "WEBP", 4 ))
+        return PX_IMAGE_INVALID;
+      return PX_IMAGE_WEBP;
+
+    case '\0':
+      if ( !strncmp( (const char*)data, "\x00\x00\x01\x00", 4 ))
+        return PX_IMAGE_ICO;
+      if ( !strncmp( (const char*)data, "\x00\x00\x02\x00", 4 ))
+        return PX_IMAGE_ICO;
+      return PX_IMAGE_INVALID;
+
+    default:
+      return PX_IMAGE_INVALID;
+  }
+}
+
+
+static char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+                                'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+                                'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+                                'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+                                'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+                                'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+                                'w', 'x', 'y', 'z', '0', '1', '2', '3',
+                                '4', '5', '6', '7', '8', '9', '+', '/'};
+
+static char *decoding_table = NULL;
+static int mod_table[] = {0, 2, 1};
+
+void build_decoding_table()
+{
+  decoding_table = (char*)malloc(256);
+
+  for (int i = 0; i < 64; i++)
+    decoding_table[(unsigned char) encoding_table[i]] = i;
+}
+
+
+void base64_cleanup()
+{
+  if(decoding_table)
+  {
+    free(decoding_table);
+    decoding_table = NULL;
+  }
+}
+
+// ENCODE
+char *base64_encode(const unsigned char *data,
+                    size_t input_length,
+                    size_t *output_length)
+{
+  if(output_length == NULL)
+  {
+    return NULL;
+  }
+
+  if(data == NULL)
+  {
+    output_length = 0;
+    return NULL;
+  }
+
+  if(input_length == 0)
+  {
+    output_length = 0;
+    return NULL;
+  }
+
+  *output_length = 4 * ((input_length + 2) / 3);
+
+  char *encoded_data = (char *)malloc(*output_length);
+  if (encoded_data == NULL) return NULL;
+
+  for (uint32_t i = 0, j = 0; i < input_length;)
+  {
+
+    uint32_t octet_a = i < input_length ? (unsigned char)data[i++] : 0;
+    uint32_t octet_b = i < input_length ? (unsigned char)data[i++] : 0;
+    uint32_t octet_c = i < input_length ? (unsigned char)data[i++] : 0;
+
+    uint32_t triple = (octet_a << 0x10) + (octet_b << 0x08) + octet_c;
+
+    encoded_data[j++] = encoding_table[(triple >> 3 * 6) & 0x3F];
+    encoded_data[j++] = encoding_table[(triple >> 2 * 6) & 0x3F];
+    encoded_data[j++] = encoding_table[(triple >> 1 * 6) & 0x3F];
+    encoded_data[j++] = encoding_table[(triple >> 0 * 6) & 0x3F];
+  }
+
+  for (int i = 0; i < mod_table[input_length % 3]; i++)
+  encoded_data[*output_length - 1 - i] = '=';
+
+  return encoded_data;
+}
+
+rtError base64_encode(const unsigned char *data, size_t input_length, rtString& s)
+{
+  size_t output_length = 0;
+
+  char *ans = base64_encode(data, input_length, &output_length);
+
+  if(ans != NULL)
+  {
+    s.init( (const char*) ans, output_length);
+
+    free(ans);
+
+    return RT_OK;
+  }
+  else
+  {
+    return RT_FAIL;
+  }
+}
+
+rtError base64_encode(rtData& d, rtString& s)
+{
+  return base64_encode( (const unsigned char *) d.data(), d.length(), s);
+}
+
+
+// DECODE
+unsigned char *base64_decode(const unsigned char *data,
+                             size_t input_length,
+                             size_t *output_length)
+{
+  if (data == NULL)
+  {
+    return NULL;
+  }
+
+  if (output_length == NULL)
+  {
+    return NULL;
+  }
+
+  if ((input_length == 0) || (input_length % 4 != 0))
+  {
+    return NULL;
+  }
+
+  if (output_length)
+    *output_length = input_length / 4 * 3;
+
+  if (data[input_length - 1] == '=')
+    (*output_length)--;
+  if (data[input_length - 2] == '=')
+    (*output_length)--;
+
+  unsigned char *decoded_data = (unsigned char*)malloc(*output_length);
+
+  if (decoded_data == NULL)
+  {
+    return NULL;
+  }
+
+  if (decoding_table == NULL)
+  {
+    build_decoding_table();
+  }
+
+  for (uint32_t i = 0, j = 0; i < input_length;)
+  {
+    uint32_t sextet_a = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
+    uint32_t sextet_b = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
+    uint32_t sextet_c = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
+    uint32_t sextet_d = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
+
+    uint32_t triple = (sextet_a << 3 * 6)
+    + (sextet_b << 2 * 6)
+    + (sextet_c << 1 * 6)
+    + (sextet_d << 0 * 6);
+
+    if (j < *output_length) decoded_data[j++] = (triple >> 2 * 8) & 0xFF;
+    if (j < *output_length) decoded_data[j++] = (triple >> 1 * 8) & 0xFF;
+    if (j < *output_length) decoded_data[j++] = (triple >> 0 * 8) & 0xFF;
+  }
+
+  return decoded_data;
+}
+
+rtError base64_decode(const unsigned char *data, size_t input_length, rtData& d)
+{
+  size_t output_length = 0;
+
+  unsigned char *ans = base64_decode(data, input_length, &output_length);
+
+  if(ans)
+  {
+    d.init((const uint8_t*) ans, output_length);
+
+    free(ans);
+
+    return RT_OK;
+  }
+  else
+  {
+    return RT_FAIL;
+  }
+}
+
+//void testBase64()
+//{
+//    rtString  in1 = "VGVzdGluZzEyMw=="; // "Testing123" in Base64
+//    rtData   out1;
+//  
+//    base64_decode( (const unsigned char *) in1.cString(), in1.length(), out1);
+//  
+//    rtString txt = "Testing123";
+//    rtData   in2( (const uint8_t*) txt.cString(), txt.length());
+//    rtString out2;
+//  
+//    base64_encode( in2, out2 );
+//  
+//    if(memcmp(out1.data(), in2.data(), out1.length()) == 0)
+//    {
+//      printf("OK");
+//    }
+//}
+
+rtError base64_decode(rtString& s, rtData& d)
+{
+  // testBase64();
+  return base64_decode( (const unsigned char *) s.cString(), s.length(), d);
+}
+
+
+
+rtString md5sum(rtString &d)
+{
+  unsigned char md5_result[MD5_DIGEST_LENGTH];        // binary
+  unsigned char str_result[MD5_DIGEST_LENGTH*2 + 1];  // char string
+
+  MD5( (const unsigned char *) d.cString(), d.length(), (unsigned char *) &md5_result[0] );
+
+  for(int i=0; i < MD5_DIGEST_LENGTH; i++)
+  {
+    sprintf( (char *) &str_result[i*2], "%02X",  md5_result[i]); // sprintf() ... will null terminate
+  }
+
+  return rtString(  (char *) str_result);
+}
+

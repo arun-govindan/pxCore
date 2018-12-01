@@ -1,6 +1,6 @@
 /*
 
- pxCore Copyright 2005-2017 John Robinson
+ pxCore Copyright 2005-2018 John Robinson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -26,8 +26,13 @@
 
 extern pxContext context;
 
-pxImage9Border::pxImage9Border(pxScene2d* scene) : pxImage9(scene), mBorderLeft(0), mBorderTop(0), mBorderRight(0), mBorderBottom(0)
+pxImage9Border::pxImage9Border(pxScene2d* scene) : pxImage9(scene), mBorderLeft(0), mBorderTop(0), mBorderRight(0), mBorderBottom(0),
+                                                   mMaskColor(), mDrawCenter(false)
 {
+  mMaskColor[0] = 1.0;
+  mMaskColor[1] = 1.0;
+  mMaskColor[2] = 1.0;
+  mMaskColor[3] = 1.0;
 }
 
 pxImage9Border::~pxImage9Border()
@@ -35,9 +40,10 @@ pxImage9Border::~pxImage9Border()
 }
 
 void pxImage9Border::draw() {
-  if (getImageResource() != NULL)
+  if (getImageResource() != NULL && getImageResource()->isInitialized() && !mSceneSuspended)
   {
-    context.drawImage9Border(mw, mh, mBorderLeft, mBorderTop, mBorderRight, mBorderBottom, mInsetLeft, mInsetTop, mInsetRight, mInsetBottom, getImageResource()->getTexture());
+    context.drawImage9Border(mw, mh, mBorderLeft, mBorderTop, mBorderRight, mBorderBottom, mInsetLeft, mInsetTop, mInsetRight, mInsetBottom,
+                             mDrawCenter, mMaskColor, getImageResource()->getTexture());
   }
 }
 
@@ -46,3 +52,5 @@ rtDefineProperty(pxImage9Border, borderLeft);
 rtDefineProperty(pxImage9Border, borderTop);
 rtDefineProperty(pxImage9Border, borderRight);
 rtDefineProperty(pxImage9Border, borderBottom);
+rtDefineProperty(pxImage9Border, maskColor);
+rtDefineProperty(pxImage9Border, drawCenter);
