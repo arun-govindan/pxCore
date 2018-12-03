@@ -24,6 +24,7 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   steps:
+  - script: choco install 7zip.install
   - script: choco install nsis 
   - script: ci\build_win32.bat
   
