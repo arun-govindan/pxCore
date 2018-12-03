@@ -127,6 +127,12 @@ else
 	exit 1;
 fi
 
+lsOpt=`ls -l $TRAVIS_BUILD_DIR/logs/`
+
+echo "!*!*!*!*!!* ls Opt!*!*!*!*!!*"
+echo $lsOpt
+echo "!*!*!*!*!!* ls Opt!*!*!*!*!!*"
+
 
 #check for valgrind memory leaks
 grep "definitely lost: 0 bytes in 0 blocks" $VALGRINDLOGS
