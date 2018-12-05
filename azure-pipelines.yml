@@ -27,4 +27,5 @@ jobs:
   - script: choco install 7zip.install
   - script: choco install nsis 
   - script: ci\build_win32.bat
+  - script: ci\execute_win.bat
   
