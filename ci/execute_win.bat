@@ -11,7 +11,7 @@ set TESTRUNNER="https://px-apps.sys.comcast.net/pxscene-samples/examples/px-refe
 cd build-win32\_CPack_Packages\win32\NSIS\spark-setup
 @rem taskkill /f /t /im Spark.exe
 
-start /B spark.exe %TESTRUNNER%?tests=%CURRDIR%\tests\pxScene2d\testRunner\tests.json 
+start /B spark.exe %TESTRUNNER%?tests=%CURRDIR%\tests\pxScene2d\testRunner\tests.json > %LOGSDIR%\exec_logs.txt
 
 set procCompleted=0
 :while
