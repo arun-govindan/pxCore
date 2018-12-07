@@ -16,11 +16,10 @@ start /B spark.exe %TESTRUNNER%?tests=%CURRDIR%\tests\pxScene2d\testRunner\tests
 set procCompleted=0
 :while
    grep -nr "TEST RESULTS: "  %LOGSDIR%\exec_logs.txt
-   tasklist |grep Spark
    set errVal=%errorlevel%
-   
+   tasklist |grep Spark
    if %errVal% EQU 0 goto :break
-   sleep 10
+   sleep 30
    goto :while
 
 :break
