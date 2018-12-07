@@ -21,6 +21,7 @@
 
 jobs:
 - job: Windows
+  timeoutInMinutes: 0
   pool:
     vmImage: 'vs2017-win2016'
   steps:
